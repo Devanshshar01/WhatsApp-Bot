@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Card Spotlight</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom animations and variables */
+    :root{
+      --page: #0f0f14;
+      --spot: #00ffff; /* Neon Cyan */
+      --ink: #ffffff;
+      --muted: #888899;
+      --card: #1a1a2e; /* Deep Blue/Black */
+      --shadow: 0 1px 20px 20px rgba(0, 255, 255, 0.2);
+      --radius: 20px;
+    }
+
+    /* Glitch effect for text */
+    @keyframes glitch {
+      0% { text-shadow: 2px 0 0 #ff00ff, -2px 0 0 #00ffff; transform: translate(0); }
+      20% { text-shadow: -2px 0 0 #ff00ff, 2px 0 0 #00ffff; transform: translate(0); }
+      40% { text-shadow: 4px 0 0 #ff00ff, -4px 0 0 #00ffff; transform: translate(0); }
+      60% { text-shadow: -4px 0 0 #ff00ff, 4px 0 0 #00ffff; transform: translate(0); }
+      80% { text-shadow: 2px 0 0 #ff00ff, -2px 0 0 #00ffff; transform: translate(0); }
+      100% { text-shadow: none; transform: translate(0); }
+    }
+
+    /* Entrance animations */
+    @keyframes slideInLeft {
+      0% { opacity: 0; transform: translateX(-50px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes slideInRight {
+      0% { opacity: 0; transform: translateX(50px); }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Animated Grid Overlay */
+    @keyframes gridShift {
+      0% { background-position: 0 0; }
+      100% { background-position: 100px 100px; }
+    }
+
+    .animated-grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: linear-gradient(to right, rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: gridShift 60s linear infinite;
+      pointer-events: none;
+      opacity: 0.2;
+      z-index: 0;
+    }
+
+    /* Enhanced gradient background with better performance */
+    body {
+      background: linear-gradient(-45deg, #0f0f14, #1a1a2e, #000000, #1a1a2e, #0f0f14);
+      background-size: 400% 400%;
+      animation: gradientShift 12s ease-in-out infinite;
+    }
+
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    /* Floating animation for background shapes */
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(5deg); }
+    }
+
+    @keyframes floatReverse {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(20px) rotate(-5deg); }
+    }
+
+    /* Card hover effects */
+    @keyframes cardPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+
+    /* Shimmer effect */
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* Particle animation */
+    @keyframes particle {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+    }
+
+    /* Neon Drop Shadow */
+    .drop-shadow-neon {
+      filter: drop-shadow(0 0 5px #00ffff) drop-shadow(0 0 15px #00ffff);
+    }
+
+    .shimmer-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      transform: translateX(-100%);
+      animation: shimmer 2s infinite;
+    }
+
+    .floating {
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .floating-reverse {
+      animation: floatReverse 8s ease-in-out infinite;
+    }
+
+    .card-hover:hover {
+      animation: cardPulse 0.6s ease-in-out;
+    }
+
+    /* Particle system */
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #00ffff; /* Neon Cyan */
+      border-radius: 50%;
+      animation: particle 4s linear infinite;
+    }
+
+    .particle:nth-child(1) { left: 20%; animation-delay: 0s; }
+    .particle:nth-child(2) { left: 40%; animation-delay: 1s; }
+    .particle:nth-child(3) { left: 60%; animation-delay: 2s; }
+    .particle:nth-child(4) { left: 80%; animation-delay: 3s; }
+
+    /* Enhanced background shapes with Tailwind */
+    .bg-dots {
+      background: radial-gradient(circle at 8px 8px, #ff00ff 5px, transparent 6px) 0 0/24px 24px; /* Neon Magenta */
+      width: 120px;
+      height: 120px;
+      filter: saturate(0.9);
+    }
+
+    .bg-zigzag {
+      width: 140px;
+      height: 140px;
+      background: linear-gradient(135deg, transparent 0 14px, #00ffff 25px 20px, transparent 10px) repeat-y; /* Neon Cyan */
+      background-size: 100% 28px;
+    }
+
+    .bg-curve {
+      width: 220px;
+      height: 220px;
+      border: 10px solid #00ffff; /* Neon Cyan */
+      border-color: #00ffff transparent transparent transparent;
+      border-radius: 50%;
+      opacity: 0.35;
+    }
+
+    /* Enhanced card styles */
+    .card {
+      background: var(--card);
+      border-radius: calc(var(--radius) + 2px);
+      box-shadow: var(--shadow), 0 2px 0 #00ffff inset; /* Neon Cyan inset */
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: calc(var(--radius) + 2px);
+      box-shadow: 6px 8px 0 #00ffff; /* Neon Cyan border */
+      pointer-events: none;
+      mix-blend-mode: normal;
+      opacity: 0.95;
+    }
+
+    /* Abstract shapes in card media */
+    .abstract .ring {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      width: 70px;
+      height: 48px;
+      border: 6px solid #00ffff; /* Neon Cyan */
+      border-radius: 14px;
+      background: linear-gradient(135deg, transparent 52%, #00ffff 52% 60%, transparent 60%);
+    }
+
+    .abstract .block-dark {
+      position: absolute;
+      bottom: -18px;
+      left: -8px;
+      width: 60%;
+      height: 60px;
+      background: #ff00ff; /* Neon Magenta */
+      transform: skewX(-12deg);
+    }
+
+    .abstract .block-light {
+      position: absolute;
+      right: -18px;
+      top: 10px;
+      width: 52%;
+      height: 80px;
+      background: #00ffff; /* Neon Cyan */
+      border: 4px solid #ff00ff; /* Neon Magenta */
+      transform: skewX(14deg);
+    }
+
+    .abstract .squiggle {
+      position: absolute;
+      right: 10px;
+      bottom: 14px;
+      width: 88px;
+      height: 18px;
+      background: radial-gradient(circle 5px at 9px 9px, #ff00ff 98%, transparent) left/22px 100% repeat-x; /* Neon Magenta */
+    }
+  </style>
+</head>
+
+<body class="min-h-screen relative overflow-hidden font-inter text-white">
+  <!-- Particle system -->
+  <div class="absolute inset-0 pointer-events-none">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
+
+  <!-- Animated Grid Overlay -->
+  <div class="animated-grid"></div>
+
+  <!-- Background decorative shapes with Tailwind animations -->
+  <div class="bg-dots absolute top-[5%] left-[10%] floating opacity-90 pointer-events-none"></div>
+  <div class="bg-zigzag absolute top-[14%] right-[2%] floating-reverse pointer-events-none"></div>
+  <div class="bg-curve absolute left-[-40px] bottom-[22%] floating transform rotate-[25deg] pointer-events-none"></div>
+  <div class="bg-curve absolute left-[8%] bottom-[-80px] floating-reverse transform rotate-[-15deg] pointer-events-none"></div>
+
+  <!-- Navigation Bar -->
+  <header class="sticky top-0 z-50 backdrop-blur-sm bg-black/30 border-b border-cyan-500/20">
+    <nav class="w-[min(1120px,92vw)] mx-auto flex items-center justify-between h-16">
+      <h1 class="text-2xl font-bold text-white tracking-widest">
+        <span class="text-[#00ffff]">NEO</span><span class="text-[#ff00ff]">HUB</span>
+      </h1>
+      <div class="flex space-x-6 text-sm font-medium">
+        <a href="#" class="text-[#00ffff] hover:text-white transition duration-200">Protocol</a>
+        <a href="#" class="text-white/70 hover:text-white transition duration-200">Data Streams</a>
+        <a href="#" class="text-white/70 hover:text-white transition duration-200">Archives</a>
+        <a href="#" class="text-white/70 hover:text-white transition duration-200">Contact</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Hero Section -->
+  <main class="w-[min(1120px,92vw)] mx-auto min-h-[calc(100vh-64px)] flex items-center justify-between py-16">
+    <!-- Hero Text and CTA -->
+    <div class="max-w-lg space-y-6 opacity-0 animate-slide-in-left" style="animation-delay: 0.5s;">
+      <h2 class="text-6xl font-extrabold leading-tight text-white">
+        <span class="block">Access the</span>
+        <span class="block text-[#00ffff] drop-shadow-neon animate-glitch-text" style="animation-delay: 1.5s;">Digital Frontier</span>
+      </h2>
+      <p class="text-lg text-white/80">
+        Integrate with the latest Neural Interface Protocol. Experience seamless data-stream
+        integration and enhanced cognitive processing in the NeoHub network.
+      </p>
+      <div class="flex space-x-4 pt-4">
+        <button class="px-6 py-3 text-lg font-bold text-black bg-[#00ffff] rounded-lg shadow-lg shadow-[#00ffff]/40 transition duration-300 hover:bg-white hover:shadow-none">
+          INITIATE ACCESS
+        </button>
+        <button class="px-6 py-3 text-lg font-bold text-[#00ffff] border-2 border-[#00ffff] rounded-lg transition duration-300 hover:bg-[#00ffff]/10">
+          VIEW ARCHIVES
+        </button>
+      </div>
+    </div>
+
+    <!-- Spotlight container (Card) -->
+    <div class="relative opacity-0 animate-slide-in-right" style="animation-delay: 0.8s;">
+      <!-- Spotlight container with enhanced shadow -->
+      <section class="w-[400px] h-[500px] bg-[#ff00ff] rounded-xl flex items-center justify-center shadow-2xl transform transition-all duration-300 hover:shadow-3xl hover:scale-[1.01]">
+        <!-- Card with enhanced animations -->
+        <article class="card w-[min(360px,86vw)] card-hover transform transition-all duration-500 hover:rotate-1 hover:shadow-2xl group">
+          <!-- Shimmer overlay for hover effect -->
+          <div class="shimmer-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+          <!-- Card media area -->
+          <div class="relative h-[135px] bg-[#00ffff] overflow-hidden">
+            <div class="abstract relative w-full h-full">
+              <span class="ring transform transition-transform duration-300 group-hover:rotate-12"></span>
+              <span class="block-dark transform transition-transform duration-300 group-hover:translate-x-2"></span>
+              <span class="block-light transform transition-transform duration-300 group-hover:translate-y-[-8px]"></span>
+              <span class="squiggle transform transition-transform duration-300 group-hover:scale-110"></span>
+            </div>
+          </div>
+
+          <!-- Card body -->
+          <div class="p-4 space-y-3">
+            <!-- Category pill with enhanced styling -->
+            <span class="inline-block bg-[#ff00ff] text-white font-bold rounded-xl px-3 py-1 text-sm border-2 border-[#00ffff] transform transition-all duration-300 hover:scale-105 hover:bg-[#ff00ff] cursor-pointer">
+              CYBERNETICS
+            </span>
+
+            <!-- Meta information -->
+            <p class="text-[var(--muted)] text-sm opacity-80 transform transition-all duration-300 group-hover:opacity-100">
+              ACCESS GRANTED // 2077.12.21
+            </p>
+
+            <!-- Title with hover effect -->
+            <h2 class="text-lg leading-tight text-white font-semibold transform transition-all duration-300 group-hover:text-[#00ffff] group-hover:scale-[1.02]">
+              NEURAL INTERFACE PROTOCOL V3.0
+            </h2>
+
+            <!-- Excerpt -->
+            <p class="text-[var(--muted)] text-sm leading-relaxed mb-4 transform transition-all duration-300 group-hover:text-[#ffffff]">
+              The latest update to the Neural Interface Protocol, enabling seamless
+              data-stream integration and enhanced cognitive processing.
+            </p>
+
+            <!-- Author section with enhanced styling -->
+            <div class="flex items-center gap-3 transform transition-all duration-300 group-hover:translate-x-1">
+              <img class="w-7 h-7 rounded-full border-2 border-[#00ffff] transform transition-transform duration-300 group-hover:scale-110" 
+                   src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjgiIGhlaWdodD0iMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMTQiIGN5PSIxNCIgcj0iMTQiIGZpbGw9IiMwMGZmZmYiLz4KICA8Y2lyY2xlIGN4PSIxNCIgY3k9IjEwIiByPSI0IiBmaWxsPSIjZmYwMGZmIi8+CiAgPHBhdGggZD0iTTggMjJjMC00IDMtNiA2LTZzNiAyIDYgNiIgZmlsbD0iI2ZmMDBmZiIvPgo8L2ZzZz4K" 
+                   alt="Author avatar">
+              <span class="text-white font-semibold transform transition-all duration-300 group-hover:text-[#00ffff]">
+                A.I. Unit 77
+              </span>
+            </div>
+          </div>
+        </article>
+      </section>
+    </div>
+  </main>
+
+  <!-- Additional floating elements for visual interest -->
+  <div class="absolute -top-20 -right-20 w-10 h-10 bg-[#ff00ff] rounded-full opacity-30 animate-bounce"></div>
+  <div class="absolute -bottom-16 -left-16 w-8 h-8 bg-[#00ffff] rounded-full opacity-40 animate-pulse"></div>
+
+  <!-- Background decorative shapes with Tailwind animations -->
+  <div class="bg-dots absolute top-[5%] left-[10%] floating opacity-90 pointer-events-none"></div>
+  <div class="bg-zigzag absolute top-[14%] right-[2%] floating-reverse pointer-events-none"></div>
+  <div class="bg-curve absolute left-[-40px] bottom-[22%] floating transform rotate-[25deg] pointer-events-none"></div>
+  <div class="bg-curve absolute left-[8%] bottom-[-80px] floating-reverse transform rotate-[-15deg] pointer-events-none"></div>
+
+  <!-- Main spotlight panel -->
+  <div class="relative">
+    <!-- Spotlight container with enhanced shadow -->
+    <section class="w-[min(1120px,92vw)] h-[min(620px,68vh)] bg-[var(--spot)] rounded-xl flex items-center justify-center shadow-2xl transform transition-all duration-300 hover:shadow-3xl hover:scale-[1.01]">
+      <!-- Card with enhanced animations -->
+      <article class="card w-[min(360px,86vw)] card-hover transform transition-all duration-500 hover:rotate-1 hover:shadow-2xl group">
+        <!-- Shimmer overlay for hover effect -->
+        <div class="shimmer-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+        <!-- Card media area -->
+        <div class="relative h-[135px] bg-[#00ffff] overflow-hidden">
+          <div class="abstract relative w-full h-full">
+            <span class="ring transform transition-transform duration-300 group-hover:rotate-12"></span>
+            <span class="block-dark transform transition-transform duration-300 group-hover:translate-x-2"></span>
+            <span class="block-light transform transition-transform duration-300 group-hover:translate-y-[-8px]"></span>
+            <span class="squiggle transform transition-transform duration-300 group-hover:scale-110"></span>
+          </div>
+        </div>
+
+        <!-- Card body -->
+        <div class="p-4 space-y-3">
+          <!-- Category pill with enhanced styling -->
+          <span class="inline-block bg-[#ff00ff] text-white font-bold rounded-xl px-3 py-1 text-sm border-2 border-[#00ffff] transform transition-all duration-300 hover:scale-105 hover:bg-[#ff00ff] cursor-pointer">
+            CYBERNETICS
+          </span>
+
+          <!-- Meta information -->
+          <p class="text-[var(--muted)] text-sm opacity-80 transform transition-all duration-300 group-hover:opacity-100">
+            ACCESS GRANTED // 2077.12.21
+          </p>
+
+          <!-- Title with hover effect -->
+          <h2 class="text-lg leading-tight text-white font-semibold transform transition-all duration-300 group-hover:text-[#00ffff] group-hover:scale-[1.02]">
+            NEURAL INTERFACE PROTOCOL V3.0
+          </h2>
+
+          <!-- Excerpt -->
+          <p class="text-[var(--muted)] text-sm leading-relaxed mb-4 transform transition-all duration-300 group-hover:text-[#ffffff]">
+            The latest update to the Neural Interface Protocol, enabling seamless
+            data-stream integration and enhanced cognitive processing.
+          </p>
+
+          <!-- Author section with enhanced styling -->
+          <div class="flex items-center gap-3 transform transition-all duration-300 group-hover:translate-x-1">
+            <img class="w-7 h-7 rounded-full border-2 border-[#00ffff] transform transition-transform duration-300 group-hover:scale-110" 
+                 src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjgiIGhlaWdodD0iMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMTQiIGN5PSIxNCIgcj0iMTQiIGZpbGw9IiMwMGZmZmYiLz4KICA8Y2lyY2xlIGN4PSIxNCIgY3k9IjEwIiByPSI0IiBmaWxsPSIjZmYwMGZmIi8+CiAgPHBhdGggZD0iTTggMjJjMC00IDMtNiA2LTZzNiAyIDYgNiIgZmlsbD0iI2ZmMDBmZiIvPgo8L3N2Zz4K" 
+                 alt="Author avatar">
+            <span class="text-white font-semibold transform transition-all duration-300 group-hover:text-[#00ffff]">
+              A.I. Unit 77
+            </span>
+          </div>
+        </div>
+    <!-- Additional floating elements for visual interest -->
+    <div class="absolute -top-20 -right-20 w-10 h-10 bg-[#ff00ff] rounded-full opacity-30 animate-bounce"></div>
+    <div class="absolute -bottom-16 -left-16 w-8 h-8 bg-[#00ffff] rounded-full opacity-40 animate-pulse"></div>
+  </div>
+
+  <!-- Features Section (Grid UI/UX) -->
+  <section class="w-[min(1120px,92vw)] mx-auto py-24">
+    <h3 class="text-4xl font-bold text-center mb-12 text-white">
+      CORE <span class="text-[#ff00ff]">SYSTEM</span> FEATURES
+    </h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Feature Card 1 -->
+      <div class="p-6 bg-[#1a1a2e]/80 rounded-xl border border-[#00ffff]/30 backdrop-blur-sm transition duration-300 hover:border-[#00ffff] hover:shadow-lg hover:shadow-[#00ffff]/10">
+        <div class="text-4xl text-[#00ffff] mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-1.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <h4 class="text-xl font-semibold text-white mb-2">Real-Time Sync</h4>
+        <p class="text-white/70 text-sm">
+          Synchronize all cognitive data streams across the network with zero latency.
+        </p>
+      </div>
+      <!-- Feature Card 2 -->
+      <div class="p-6 bg-[#1a1a2e]/80 rounded-xl border border-[#00ffff]/30 backdrop-blur-sm transition duration-300 hover:border-[#00ffff] hover:shadow-lg hover:shadow-[#00ffff]/10">
+        <div class="text-4xl text-[#ff00ff] mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <h4 class="text-xl font-semibold text-white mb-2">Quantum Encryption</h4>
+        <p class="text-white/70 text-sm">
+          Military-grade encryption protocols ensure your data remains secure from all threats.
+        </p>
+      </div>
+      <!-- Feature Card 3 -->
+      <div class="p-6 bg-[#1a1a2e]/80 rounded-xl border border-[#00ffff]/30 backdrop-blur-sm transition duration-300 hover:border-[#00ffff] hover:shadow-lg hover:shadow-[#00ffff]/10">
+        <div class="text-4xl text-[#00ffff] mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9h18" />
+          </svg>
+        </div>
+        <h4 class="text-xl font-semibold text-white mb-2">Global Access</h4>
+        <p class="text-white/70 text-sm">
+          Connect to the NeoHub from any node in the global digital infrastructure.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Data Stream Section (Timeline UI/UX) -->
+  <section class="w-[min(1120px,92vw)] mx-auto py-24">
+    <h3 class="text-4xl font-bold text-center mb-12 text-white">
+      LIVE <span class="text-[#00ffff]">DATA</span> STREAM
+    </h3>
+    <div class="relative max-w-3xl mx-auto">
+      <!-- Vertical Neon Line -->
+      <div class="absolute left-1/2 transform -translate-x-1/2 w-0.5 h-full bg-[#ff00ff]/50"></div>
+
+      <!-- Stream Item 1 -->
+      <div class="flex justify-start items-center w-full mb-8">
+        <div class="w-1/2 pr-8">
+          <div class="p-4 bg-[#1a1a2e] rounded-lg border border-[#00ffff] shadow-lg shadow-[#00ffff]/10 transition duration-300 hover:scale-[1.02]">
+            <p class="text-xs text-[#00ffff] mb-1">09:41:22 ZULU</p>
+            <p class="text-white font-medium">NODE_04: Connection established. Protocol handshake complete.</p>
+          </div>
+        </div>
+        <div class="w-1/2 pl-8 flex justify-start">
+          <div class="w-4 h-4 bg-[#00ffff] rounded-full border-2 border-[#1a1a2e] shadow-lg shadow-[#00ffff]/50"></div>
+        </div>
+      </div>
+
+      <!-- Stream Item 2 -->
+      <div class="flex justify-end items-center w-full mb-8">
+        <div class="w-1/2 pr-8 flex justify-end">
+          <div class="w-4 h-4 bg-[#ff00ff] rounded-full border-2 border-[#1a1a2e] shadow-lg shadow-[#ff00ff]/50"></div>
+        </div>
+        <div class="w-1/2 pl-8">
+          <div class="p-4 bg-[#1a1a2e] rounded-lg border border-[#ff00ff] shadow-lg shadow-[#ff00ff]/10 transition duration-300 hover:scale-[1.02]">
+            <p class="text-xs text-[#ff00ff] mb-1">09:41:35 ZULU</p>
+            <p class="text-white font-medium">DATA_STREAM: 4.7TB transferred. Integrity check: 100%.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stream Item 3 -->
+      <div class="flex justify-start items-center w-full mb-8">
+        <div class="w-1/2 pr-8">
+          <div class="p-4 bg-[#1a1a2e] rounded-lg border border-[#00ffff] shadow-lg shadow-[#00ffff]/10 transition duration-300 hover:scale-[1.02]">
+            <p class="text-xs text-[#00ffff] mb-1">09:41:50 ZULU</p>
+            <p class="text-white font-medium">A.I. UNIT 77: New protocol update deployed successfully.</p>
+          </div>
+        </div>
+        <div class="w-1/2 pl-8 flex justify-start">
+          <div class="w-4 h-4 bg-[#00ffff] rounded-full border-2 border-[#1a1a2e] shadow-lg shadow-[#00ffff]/50"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Enhanced Tailwind config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'inter': ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif']
+          },
+          animation: {
+            'bounce-slow': 'bounce 3s infinite',
+            'pulse-slow': 'pulse 4s infinite',
+            'slide-in-left': 'slideInLeft 1s ease-out forwards',
+            'slide-in-right': 'slideInRight 1s ease-out forwards',
+            'glitch-text': 'glitch 1s steps(10) forwards',
+          },
+          boxShadow: {
+            '3xl': '0 35px 60px -12px rgba(0, 0, 0, 0.25)',
+          }
+        }
+      }
+    }
+
+    // Add interactive hover effects
+    document.addEventListener('DOMContentLoaded', function() {
+      const card = document.querySelector('.card-hover');
+
+      card.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-8px) rotate(1deg)';
+      });
+
+      card.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0) rotate(0deg)';
+      });
+    });
+  </script>
+</body>
+</html>

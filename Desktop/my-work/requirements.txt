@@ -1,0 +1,12 @@
+# Discord Bot Requirements
+discord.py>=2.3.0
+aiohttp>=3.8.0
+
+# Optional dependencies for extended functionality
+# Uncomment if you want additional features:
+
+# asyncpg>=0.28.0  # For PostgreSQL database support
+# pillow>=9.0.0    # For image processing
+# youtube-dl>=2023.1.6  # For music functionality
+# lavalink>=4.0.0  # For advanced music streaming
+# cryptography>=3.4.0  # For enhanced security features
