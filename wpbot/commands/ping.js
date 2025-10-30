@@ -9,20 +9,23 @@ module.exports = {
     
     async execute(client, message, args) {
         try {
-            const start = Date.now();
-            const sent = await message.reply('🏓 Pinging...');
-            const latency = Date.now() - start;
+            const messageTimestamp = (message.timestamp || Math.floor(Date.now() / 1000)) * 1000;
+            const latency = Math.max(0, Date.now() - messageTimestamp);
 
-            const info = client.info;
+            const info = client.info || {};
             const uptime = process.uptime();
 
             let response = `🏓 *Pong!*\n\n`;
             response += `⚡ *Response Time:* ${latency}ms\n`;
             response += `⏱️ *Uptime:* ${helpers.formatDuration(uptime * 1000)}\n`;
-            response += `📱 *Bot Number:* ${info.wid.user}\n`;
+
+            if (info.wid?.user) {
+                response += `📱 *Bot Number:* ${info.wid.user}\n`;
+            }
+
             response += `✅ *Status:* Online`;
 
-            await sent.edit(response);
+            await message.reply(response);
         } catch (error) {
             console.error('Error in ping command:', error);
             await message.reply('❌ An error occurred while checking ping.');

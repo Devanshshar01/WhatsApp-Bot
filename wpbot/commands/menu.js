@@ -16,6 +16,7 @@ module.exports = {
             menuText += `*📌 BASIC COMMANDS*\n`;
             menuText += `├ ${config.prefix}help - Command list\n`;
             menuText += `├ ${config.prefix}ping - Check status\n`;
+            menuText += `├ ${config.prefix}profile - Your stats\n`;
             menuText += `├ ${config.prefix}about - Bot info\n`;
             menuText += `└ ${config.prefix}menu - This menu\n\n`;
             
@@ -34,6 +35,11 @@ module.exports = {
             menuText += `├ ${config.prefix}shorturl <link>\n`;
             menuText += `├ ${config.prefix}qrcode <text>\n`;
             menuText += `└ ${config.prefix}currency <amt> <from> <to>\n\n`;
+
+            menuText += `*🎉 FUN COMMANDS*\n`;
+            menuText += `├ ${config.prefix}compliment - Spread positivity\n`;
+            menuText += `├ ${config.prefix}insult - Light roast\n`;
+            menuText += `└ ${config.prefix}flirt - Pickup lines\n\n`;
             
             menuText += `*👥 GROUP COMMANDS*\n`;
             menuText += `├ ${config.prefix}tagall - Tag everyone\n`;

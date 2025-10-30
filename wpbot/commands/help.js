@@ -1,5 +1,4 @@
 const config = require('../config');
-const commandHandler = require('../utils/commandHandler');
 
 module.exports = {
     name: 'help',
@@ -10,6 +9,9 @@ module.exports = {
     
     async execute(client, message, args) {
         try {
+            // Ensure we load command handler lazily to avoid circular dependency
+            const commandHandler = require('../utils/commandHandler');
+
             // If specific command requested
             if (args.length > 0) {
                 const commandName = args[0].toLowerCase();
