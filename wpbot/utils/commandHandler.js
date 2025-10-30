@@ -77,6 +77,7 @@ class CommandHandler {
         const command = this.commands.get(commandName);
 
         if (!command) {
+            logger.warn(`Command not found: ${commandName}`);
             return false;
         }
 
@@ -90,6 +91,7 @@ class CommandHandler {
 
             // Check permissions
             if (command.ownerOnly && !helpers.isOwner(userId)) {
+                logger.warn(`Unauthorized owner command attempt by ${userId}: ${commandName}`);
                 await message.reply('❌ This command is only available to bot owners.');
                 return true;
             }
@@ -102,7 +104,9 @@ class CommandHandler {
             if (command.adminOnly) {
                 const isAdmin = await helpers.isGroupAdmin(message);
                 const isOwner = helpers.isOwner(userId);
-                
+
+                logger.info(`Admin check for ${userId}: isAdmin=${isAdmin}, isOwner=${isOwner}`);
+
                 if (!isAdmin && !isOwner) {
                     await message.reply('❌ This command requires admin privileges.');
                     return true;

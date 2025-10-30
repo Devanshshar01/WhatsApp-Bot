@@ -79,9 +79,12 @@ client.on('ready', async () => {
 // Message Handler
 client.on('message', async (message) => {
     try {
+        // Store client reference in message for easier access
+        message.client = message.client || client;
         await messageHandler.handle(client, message);
     } catch (error) {
         logger.error('Error handling message:', error);
+        console.error(error);
     }
 });
 

@@ -17,7 +17,9 @@ class MessageHandler {
             // Get contact and update database
             const contact = await message.getContact();
             const userId = message.author || message.from;
-            database.createOrUpdateUser(userId, contact.pushname || contact.name, contact.number);
+            const userName = contact.pushname || contact.name || 'Unknown';
+            const userNumber = contact.number || userId.split('@')[0];
+            database.createOrUpdateUser(userId, userName, userNumber);
 
             // Check if user is blocked
             if (database.isUserBlocked(userId)) {
@@ -41,6 +43,7 @@ class MessageHandler {
 
             // Check for commands
             if (body.startsWith(config.prefix)) {
+                logger.info(`Command detected from ${userId}: ${body}`);
                 await this.handleCommand(client, message, body);
                 return;
             }
@@ -64,10 +67,16 @@ class MessageHandler {
 
         if (!commandName) return;
 
+        logger.info(`Executing command: ${commandName} with args: ${args.join(' ')}`);
+
         try {
-            await commandHandler.execute(client, message, commandName, args);
+            const executed = await commandHandler.execute(client, message, commandName, args);
+            if (!executed) {
+                logger.warn(`Command ${commandName} was not found or not executed`);
+            }
         } catch (error) {
             logger.error(`Error executing command ${commandName}:`, error);
+            console.error(error);
             await message.reply('❌ An error occurred while processing your command.');
         }
     }

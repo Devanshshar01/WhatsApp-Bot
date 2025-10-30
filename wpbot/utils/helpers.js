@@ -13,18 +13,19 @@ const isOwner = (userId) => {
  */
 const isGroupAdmin = async (message) => {
     if (!message.from.endsWith('@g.us')) return false;
-    
+
     try {
         const chat = await message.getChat();
-        const contact = await message.getContact();
-        
+        const userId = message.author || message.from;
+
         for (let participant of chat.participants) {
-            if (participant.id._serialized === contact.id._serialized) {
+            if (participant.id._serialized === userId) {
                 return participant.isAdmin || participant.isSuperAdmin;
             }
         }
         return false;
     } catch (error) {
+        console.error('Error checking admin status:', error);
         return false;
     }
 };
@@ -34,11 +35,12 @@ const isGroupAdmin = async (message) => {
  */
 const isBotGroupAdmin = async (message) => {
     if (!message.from.endsWith('@g.us')) return false;
-    
+
     try {
         const chat = await message.getChat();
-        const me = await message.client.info.wid._serialized;
-        
+        const client = message.client || message._client;
+        const me = client.info.wid._serialized;
+
         for (let participant of chat.participants) {
             if (participant.id._serialized === me) {
                 return participant.isAdmin || participant.isSuperAdmin;
@@ -46,6 +48,7 @@ const isBotGroupAdmin = async (message) => {
         }
         return false;
     } catch (error) {
+        console.error('Error checking bot admin status:', error);
         return false;
     }
 };

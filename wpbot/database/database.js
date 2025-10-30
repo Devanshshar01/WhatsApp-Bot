@@ -22,15 +22,25 @@ class BotDatabase {
         try {
             // Ensure database directory exists
             fs.ensureDirSync(path.dirname(this.dbPath));
-            
+
             // Load existing data if file exists
             if (fs.existsSync(this.dbPath)) {
-                this.data = JSON.parse(fs.readFileSync(this.dbPath, 'utf8'));
-            } else {
-                // Create new database file
-                this.save();
+                const fileContent = fs.readFileSync(this.dbPath, 'utf8');
+                if (fileContent.trim()) {
+                    this.data = JSON.parse(fileContent);
+                }
             }
-            
+
+            // Ensure all data structures exist
+            this.data.users = this.data.users || {};
+            this.data.groups = this.data.groups || {};
+            this.data.groupSettings = this.data.groupSettings || {};
+            this.data.warnings = this.data.warnings || [];
+            this.data.commandStats = this.data.commandStats || [];
+
+            // Save initialized structure
+            this.save();
+
             logger.success('Database initialized successfully');
         } catch (error) {
             logger.error('Failed to initialize database:', error);
