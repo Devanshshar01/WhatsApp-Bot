@@ -1,0 +1,76 @@
+{
+  "users": {
+    "919266024309@c.us": {
+      "id": "919266024309@c.us",
+      "name": "Sanjana Sharma",
+      "phone": "919266024309",
+      "is_blocked": false,
+      "message_count": 10,
+      "last_seen": 1761829544224,
+      "created_at": 1761829113183
+    },
+    "7491127652552@lid": {
+      "id": "7491127652552@lid",
+      "name": "Dhruv Anand",
+      "phone": "917669665135",
+      "is_blocked": false,
+      "message_count": 5,
+      "last_seen": 1761833097799,
+      "created_at": 1761829213420
+    },
+    "70923164090596@lid": {
+      "id": "70923164090596@lid",
+      "name": "~Bhani",
+      "phone": "918851363695",
+      "is_blocked": false,
+      "message_count": 1,
+      "last_seen": 1761832947828,
+      "created_at": 1761832895784
+    },
+    "70180302491737@lid": {
+      "id": "70180302491737@lid",
+      "name": "Arnav Sharma",
+      "phone": "919289811877",
+      "is_blocked": false,
+      "message_count": 6,
+      "last_seen": 1761833098200,
+      "created_at": 1761832954344
+    },
+    "109290106962069@lid": {
+      "id": "109290106962069@lid",
+      "name": "Soumil",
+      "phone": "918076911789",
+      "is_blocked": false,
+      "message_count": 4,
+      "last_seen": 1761833096987,
+      "created_at": 1761833035266
+    }
+  },
+  "groups": {
+    "120363404373472538@g.us": {
+      "id": "120363404373472538@g.us",
+      "name": "Jatta K Chore",
+      "description": "",
+      "welcome_enabled": 1,
+      "goodbye_enabled": 1,
+      "anti_link": 0,
+      "anti_spam": 0,
+      "profanity_filter": 0,
+      "created_at": 1761829213492
+    },
+    "120363420836704432@g.us": {
+      "id": "120363420836704432@g.us",
+      "name": "PANEL 5 NSS INTERVIEW 2025-26",
+      "description": "Past experience portfolios :-\nhttps://drive.google.com/drive/folders/1pgK2yYY4k8rcGBME190-31xbeCjbzxTO",
+      "welcome_enabled": 1,
+      "goodbye_enabled": 1,
+      "anti_link": 0,
+      "anti_spam": 0,
+      "profanity_filter": 0,
+      "created_at": 1761832895790
+    }
+  },
+  "groupSettings": {},
+  "warnings": [],
+  "commandStats": []
+}
