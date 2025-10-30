@@ -79,12 +79,20 @@ client.on('ready', async () => {
 // Message Handler
 client.on('message', async (message) => {
     try {
+        console.log('[MAIN] New message event triggered');
+        console.log('[MAIN] Message details:', {
+            from: message.from,
+            body: message.body,
+            hasMedia: message.hasMedia,
+            type: message.type
+        });
+        
         // Store client reference in message for easier access
         message.client = message.client || client;
         await messageHandler.handle(client, message);
     } catch (error) {
         logger.error('Error handling message:', error);
-        console.error(error);
+        console.error('[MAIN ERROR]', error);
     }
 });
 

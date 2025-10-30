@@ -3,8 +3,11 @@ node_modules/
 .wwebjs_auth/
 .wwebjs_cache/
 database/*.db
+database/*.json
 media/downloads/*
 media/temp/*
+media/*
 logs/*.log
+logs/
 *.log
 .DS_Store

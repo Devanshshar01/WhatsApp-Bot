@@ -22,6 +22,18 @@ module.exports = {
             menuText += `*🎨 MEDIA COMMANDS*\n`;
             menuText += `├ ${config.prefix}sticker - Make sticker\n`;
             menuText += `└ ${config.prefix}download - Save media\n\n`;
+
+            menuText += `*🧰 UTILITY COMMANDS*\n`;
+            menuText += `├ ${config.prefix}translate <lang> <text>\n`;
+            menuText += `├ ${config.prefix}weather <city>\n`;
+            menuText += `├ ${config.prefix}remind <time> <msg>\n`;
+            menuText += `├ ${config.prefix}poll question | opt1 | opt2\n`;
+            menuText += `├ ${config.prefix}calc <expression>\n`;
+            menuText += `├ ${config.prefix}timer <start|stop>\n`;
+            menuText += `├ ${config.prefix}define <word>\n`;
+            menuText += `├ ${config.prefix}shorturl <link>\n`;
+            menuText += `├ ${config.prefix}qrcode <text>\n`;
+            menuText += `└ ${config.prefix}currency <amt> <from> <to>\n\n`;
             
             menuText += `*👥 GROUP COMMANDS*\n`;
             menuText += `├ ${config.prefix}tagall - Tag everyone\n`;

@@ -62,6 +62,13 @@ module.exports = {
 
             await message.reply(response);
 
+            // Send the media back to the user as a document
+            const MessageMedia = require('whatsapp-web.js').MessageMedia;
+            const downloadedMedia = new MessageMedia(media.mimetype, media.data, filename);
+            await client.sendMessage(message.from, downloadedMedia, {
+                caption: `📥 Downloaded: ${filename}`
+            });
+
         } catch (error) {
             console.error('Error in download command:', error);
             await message.reply('❌ An error occurred while downloading media.');

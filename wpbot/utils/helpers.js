@@ -18,8 +18,28 @@ const isGroupAdmin = async (message) => {
         const chat = await message.getChat();
         const userId = message.author || message.from;
 
-        for (let participant of chat.participants) {
-            if (participant.id._serialized === userId) {
+        let contact;
+        try {
+            contact = await message.getContact();
+        } catch (contactError) {
+            console.error('Error fetching contact for admin check:', contactError);
+        }
+
+        const contactId = contact?.id?._serialized;
+        const contactNumber = contact?.number ? contact.number.replace(/\D/g, '') : null;
+
+        const candidateIds = new Set([userId, contactId]);
+        const candidateNumbers = new Set([
+            userId ? userId.split('@')[0] : null,
+            contactId ? contactId.split('@')[0] : null,
+            contactNumber
+        ].filter(Boolean));
+
+        for (const participant of chat.participants) {
+            const participantId = participant.id._serialized;
+            const participantNumber = participant.id.user;
+
+            if (candidateIds.has(participantId) || candidateNumbers.has(participantNumber)) {
                 return participant.isAdmin || participant.isSuperAdmin;
             }
         }

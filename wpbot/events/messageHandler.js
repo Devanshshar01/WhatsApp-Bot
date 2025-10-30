@@ -11,6 +11,16 @@ class MessageHandler {
      */
     async handle(client, message) {
         try {
+            // Add detailed logging for debugging
+            console.log('[DEBUG] Message received:', {
+                from: message.from,
+                author: message.author,
+                body: message.body,
+                type: message.type,
+                isForwarded: message.isForwarded,
+                timestamp: new Date().toISOString()
+            });
+
             // Ignore if message is from status broadcast
             if (message.from === 'status@broadcast') return;
 
@@ -19,10 +29,18 @@ class MessageHandler {
             const userId = message.author || message.from;
             const userName = contact.pushname || contact.name || 'Unknown';
             const userNumber = contact.number || userId.split('@')[0];
+            
+            console.log('[DEBUG] Contact info:', {
+                userId,
+                userName,
+                userNumber
+            });
+
             database.createOrUpdateUser(userId, userName, userNumber);
 
             // Check if user is blocked
             if (database.isUserBlocked(userId)) {
+                console.log('[DEBUG] User is blocked:', userId);
                 return;
             }
 
@@ -35,15 +53,18 @@ class MessageHandler {
 
             // Get message body
             const body = message.body || '';
+            console.log('[DEBUG] Message body:', body);
+            console.log('[DEBUG] Prefix check:', body.startsWith(config.prefix), 'Prefix:', config.prefix);
 
-            // Handle group-specific filters
-            if (message.from.endsWith('@g.us')) {
+            // Handle group-specific filters (but don't return if it's a command)
+            if (message.from.endsWith('@g.us') && !body.startsWith(config.prefix)) {
                 await this.handleGroupFilters(client, message, body);
             }
 
             // Check for commands
             if (body.startsWith(config.prefix)) {
                 logger.info(`Command detected from ${userId}: ${body}`);
+                console.log('[DEBUG] Processing command:', body);
                 await this.handleCommand(client, message, body);
                 return;
             }
@@ -55,6 +76,7 @@ class MessageHandler {
 
         } catch (error) {
             logger.error('Error in message handler:', error);
+            console.error('[ERROR] Full error details:', error);
         }
     }
 
