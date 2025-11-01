@@ -1,141 +1,245 @@
-# 🤖 Advanced WhatsApp Bot
+# 🤖 WhatsApp Automation Suite
 
-A fully functional WhatsApp bot built with Node.js and whatsapp-web.js, featuring comprehensive automation, group management, media handling, and advanced security features.
+A production-ready WhatsApp bot powered by [Node.js](https://nodejs.org/) and [whatsapp-web.js](https://github.com/pedroslopez/whatsapp-web.js). It includes a modern command framework, group moderation tools, webhook integrations, and deployment guides so you can ship reliable automation fast.
 
-## ✨ Features
+---
 
-### Basic Features
-- ✅ Auto-response to incoming messages (greetings, help menu)
-- ✅ Command handler system with prefix-based commands
-- ✅ Send, receive, and forward messages (text, images, audio, documents)
-- ✅ Typing and online presence simulation
-- ✅ Comprehensive logging system
-- ✅ Tag all group members
+## 📚 Table of Contents
+1. [Highlights](#-highlights)
+2. [Architecture Overview](#-architecture-overview)
+3. [Quick Start](#-quick-start)
+4. [Configuration](#-configuration)
+5. [Command Catalogue](#-command-catalogue)
+6. [Advanced Utilities](#-advanced-utilities)
+7. [Deployment Playbook](#-deployment-playbook)
+8. [Security Checklist](#-security-checklist)
+9. [Troubleshooting](#-troubleshooting)
+10. [Roadmap](#-roadmap)
+11. [Contributing & License](#-contributing--license)
 
-### Advanced Features
-- 🛡️ Owner/admin permission system
-- 👥 Complete group management (add/remove/promote/demote)
-- 📊 User information and profile management
-- 🎨 Auto-sticker creator from images and videos
-- 🚫 Anti-spam, anti-link, and profanity filters
-- 💾 SQLite database for persistent storage
-- ⏱️ Command cooldowns and rate limiting
-- 👋 Custom welcome and goodbye messages
-- 📥 Media download and storage
-- 📡 Broadcast messages to all groups
+---
 
-## 📁 Project Structure
+## ✨ Highlights
+- Comprehensive command system with cooldowns, aliases, owner/admin gating, and user blocking.
+- Group management suite: welcome/goodbye flows, anti-link & anti-spam filters, promotions/demotions, warning tracking.
+- Media utilities: sticker conversion, safe media downloads with re-share, QR generation, URL shortener.
+- Utility arsenal: translation, weather, reminders, polls, calculator, timer, dictionary definitions, currency conversion, profile analytics.
+- Fun interactions: compliments, roasts, and 100+ flirty pickup lines (all rate limited).
+- Express webhook server exposing `/health` and `/send` endpoints for integrations.
+- JSON-backed persistence (`database/bot.json`) + structured logging for audits.
+- React-enabled admin panel for live metrics, user/group management, command toggles, log viewer, and manual messaging.
+
+---
+
+## 🏗️ Architecture Overview
 
 ```
-whatsapp-bot/
-├── commands/           # Command files
-│   ├── help.js
-│   ├── ping.js
-│   ├── about.js
-│   ├── menu.js
-│   ├── tagall.js
-│   ├── add.js
-│   ├── remove.js
-│   ├── promote.js
-│   ├── demote.js
-│   ├── groupinfo.js
-│   ├── sticker.js
-│   ├── download.js
-│   ├── antilink.js
-│   ├── antispam.js
-│   ├── welcome.js
-│   ├── goodbye.js
-│   ├── broadcast.js
-│   ├── block.js
-│   ├── unblock.js
-│   ├── leave.js
-│   └── stats.js
-├── database/          # Database management
-│   └── database.js
-├── events/            # Event handlers
-│   ├── messageHandler.js
-│   └── groupHandler.js
-├── utils/             # Utility functions
-│   ├── logger.js
-│   ├── helpers.js
-│   ├── cooldown.js
-│   └── commandHandler.js
-├── media/             # Media storage
-│   ├── downloads/
-│   ├── temp/
-│   └── stickers/
-├── logs/              # Log files
-├── index.js           # Main bot file
-├── config.js          # Configuration
-├── package.json       # Dependencies
-├── .env.example       # Environment variables template
-└── README.md          # This file
+wpbot/
+├── bot-server.js          # WhatsApp client & Express bootstrap
+├── commands/              # Modular command implementations
+├── database/
+│   ├── bot.json           # Runtime data (users, groups, stats)
+│   └── database.js        # Persistence helper
+├── events/                # Message/group handlers
+├── utils/                 # Helpers, logger, cooldown, command loader
+├── media/                 # Downloads, temp files, generated stickers
+├── logs/                  # Rotating logs
+├── run.sh / ecosystem.config.js
+├── DEPLOYMENT.md / TESTING.md / UTILITY_COMMANDS.md
+└── README.md
 ```
 
-## 🚀 Installation
+- `bot-server.js` wires LocalAuth, QR handling, reconnect logic, and Express routes; delegates message processing to `events/messageHandler.js`.
+- `utils/commandHandler.js` loads every `commands/*.js`, registers aliases, enforces permissions, tracks cooldowns, and logs usage via `database/database.js`.
+- `database/bot.json` stores users, groups, warnings, command metrics, and config flags with zero external dependencies.
+- Additional docs (`DEPLOYMENT.md`, `TESTING.md`, `UTILITY_COMMANDS.md`) cover hosting, QA, and reference usage.
 
-### Prerequisites
-- Node.js (v16 or higher)
-- npm or yarn
-- A WhatsApp account
+---
 
-### Step 1: Clone or Download
+## ⚡ Quick Start
+
+> Requirements: Node.js 18+, npm, Git (optional), and a dedicated WhatsApp account that stays logged in on a phone.
 
 ```bash
-# If using git
-git clone <repository-url>
-cd whatsapp-bot
-
-# Or download and extract the ZIP file
-```
-
-### Step 2: Install Dependencies
-
-```bash
+# 1. Clone and install
+git clone https://github.com/<your-username>/WhatsApp-Bot.git
+cd WhatsApp-Bot/wpbot
 npm install
-```
 
-This will install all required packages:
-- whatsapp-web.js (WhatsApp Web API)
-- qrcode-terminal (QR code display)
-- dotenv (Environment variables)
-- axios (HTTP requests)
-- moment (Date/time formatting)
-- fs-extra (File system utilities)
-- sharp (Image processing)
-- fluent-ffmpeg (Video processing)
-- better-sqlite3 (Database)
-- chalk (Terminal colors)
-
-### Step 3: Configure Environment
-
-```bash
-# Copy the example environment file
+# 2. Configure environment
 cp .env.example .env
+nano .env    # fill BOT_NAME, PREFIX, OWNER_NUMBERS, etc.
 
-# Edit .env with your settings
-nano .env  # or use any text editor
-```
+# (Optional) 3. Configure admin panel credentials
+ADMIN_PASSWORD=super-secret
+ADMIN_JWT_SECRET=generate-a-strong-secret
 
-**Important Configuration:**
-```env
-BOT_NAME=WhatsApp Bot
-PREFIX=/
-OWNER_NUMBERS=919876543210,918765432109  # Replace with your numbers
-ENABLE_AUTO_RESPONSE=true
-ENABLE_ANTI_SPAM=true
-ENABLE_ANTI_LINK=true
-```
+# 3. Launch & scan QR
+npm start    # QR renders in terminal (WhatsApp > Linked Devices)
 
-### Step 4: Run the Bot
+# Optional: auto-reload during development
+npm run dev
 
-```bash
-# Start the bot
-npm start
+# Optional: run admin panel locally (separate terminal)
+npm run admin:dev
+open http://localhost:5173
 
-# Or for development with auto-restart
+# Optional: auto-reload during development
 npm run dev
 ```
+
+Wait for **Client is ready!**, then interact from any WhatsApp account other than the one that scanned the QR.
+
+---
+
+## 🔧 Configuration
+
+| Variable | Description |
+|----------|-------------|
+| `BOT_NAME` | Display name in responses/help panels |
+| `PREFIX` | Command prefix (default `/`) |
+| `OWNER_NUMBERS` | Comma-separated list of international numbers with owner privileges |
+| `DATABASE_PATH` | JSON database path (defaults to `database/bot.json`) |
+| `ENABLE_AUTO_RESPONSE`, `ENABLE_ANTI_SPAM`, `ENABLE_ANTI_LINK` | Feature flags |
+| `MEDIA_MAX_SIZE`, `RATE_LIMIT_WINDOW`, etc. | Additional runtime tuning |
+
+> Sensitive data (`.env`, `.wwebjs_auth/`, `database/*.json`, `logs/`, `media/`) is already gitignored. Keep it private.
+
+---
+
+## 🧰 Command Catalogue
+
+### Basic
+- `/help [command]` – detailed documentation.
+- `/menu` – category overview.
+- `/ping` – latency & uptime.
+- `/about` – bot metadata.
+- `/profile [@user|reply|number]` – usage stats, last/first seen, block status.
+
+### Media
+- `/sticker` – convert replied media into stickers.
+- `/download` – save media and return the file.
+- `/qrcode <text>` – generate QR images.
+- `/shorturl <url>` – shorten links (TinyURL API).
+
+### Utility
+- `/translate <lang> <text>` – translation (Google).
+- `/weather <city>` – weather snapshot (wttr.in).
+- `/remind <time> <message>` – reminders (1 minute – 7 days).
+- `/poll question | opt1 | opt2` – polls with voting & results.
+- `/calc <expression>` – Math evaluation with parentheses/functions.
+- `/timer start|stop|check [duration]` – timers & stopwatch.
+- `/define <word>` – dictionary lookups.
+- `/currency <amount> <from> <to>` – exchange rates.
+- `/compliment`, `/insult`, `/flirt` – fun interactions with cooldowns.
+
+### Group (Admin/Owner)
+- `/tagall`, `/add`, `/remove`, `/promote`, `/demote`, `/groupinfo`.
+- `/antilink`, `/antispam`, `/welcome`, `/goodbye` toggles.
+
+### Owner
+- `/broadcast`, `/block`, `/unblock`, `/leave`.
+
+Commands are auto-loaded from `commands/`; use `_template.js` or any existing file as a reference and restart the bot to activate new modules.
+
+---
+
+## 🧪 Advanced Utilities
+- **Profile analytics** – message counts, timestamps, blocked state tracked in `database/bot.json`.
+- **Blocking system** – `/block` updates `is_blocked` to silently ignore users.
+- **Auto-responses** – configure greeting/help replies via `config.autoResponses`.
+- **Webhooks** – `GET /health`, `POST /send` handled by Express for monitoring/integrations.
+- **Logging** – structured console output plus rotating text logs under `logs/`.
+
+Full usage examples live in `UTILITY_COMMANDS.md`.
+
+---
+
+## 🚀 Deployment Playbook
+
+### Local machine or VPS (Ubuntu 22.04+)
+1. Install Node.js 18+, Chrome/Puppeteer dependencies (see DEPLOYMENT.md).
+2. Clone project, configure `.env`, run `npm install`.
+3. Start via PM2 for resilience:
+   ```bash
+   pm2 start bot-server.js --name whatsapp-bot
+   pm2 save
+   pm2 startup
+   ```
+4. Keep the paired phone online—WhatsApp Web sessions require it.
+
+### Oracle Cloud Always Free (24/7 recommended)
+- Provision Ampere A1 VM → install Node.js + Chromium deps → copy project → configure `.env` → run with PM2. Detailed steps in DEPLOYMENT.md.
+
+### Alternative platforms
+| Platform | Notes |
+|----------|-------|
+| **Railway.app** | Great DX, free 500 compute hours/month (~20 days); upgrade for full uptime. |
+| **Render.com** | Free tier sleeps after 15 min idle; wakes on traffic. |
+| **Fly.io** | Lightweight VM with limited free credits; CLI heavy. |
+| **Google Cloud / Oracle Cloud** | Always-on VMs; requires manual security hardening. |
+
+> Serverless hosts (Vercel, Netlify, etc.) are unsuitable—`whatsapp-web.js` requires a persistent process.
+
+---
+
+## 🔐 Security Checklist
+1. Keep `.env`, `database/bot.json`, `.wwebjs_auth/` outside version control and with restricted access.
+2. Limit `OWNER_NUMBERS` to trusted admins only.
+3. Enable anti-spam/anti-link for public groups and audit warnings periodically.
+4. Monitor `logs/` and command usage for anomalies.
+5. Regularly update dependencies (`npm audit fix`) and patch the OS.
+6. Back up `database/` and `.wwebjs_auth/` before migrating or redeploying servers.
+
+---
+
+## 🩺 Troubleshooting
+
+| Symptom | Likely Cause | Resolution |
+|---------|--------------|------------|
+| QR code not visible | Terminal/SSH client incompatibility | Switch terminal, use `qr-image` output, check internet |
+| Authentication fails | Stale session | Delete `.wwebjs_auth/` + `.wwebjs_cache/`, restart, re-scan |
+| Bot unresponsive | Process crash, wrong prefix, or rate limit | Inspect console/PM2 logs; verify `PREFIX`; watch cooldowns |
+| Admin command denied | Multi-device ID not recognized | Ensure user is admin/owner; `helpers.isGroupAdmin` handles `@lid` IDs |
+| Media download error | File too large or missing dependencies | Respect `config.maxMediaSize`; install `sharp`/`ffmpeg` |
+
+The TESTING.md guide walks through structured QA scenarios.
+
+---
+
+## 🛣️ Roadmap
+- [ ] AI-assisted replies & summarization
+- [ ] Multi-language localization
+- [ ] Web dashboard & analytics
+- [ ] Plugin ecosystem for third-party modules
+- [ ] Scheduled & recurring messages
+- [ ] Voice-to-text (Whisper) integration
+- [ ] Advanced moderation (keyword monitors, throttling)
+
+---
+
+## 🤝 Contributing & License
+
+Contributions are welcome!
+1. Fork the repository.
+2. Create a feature branch (`git checkout -b feat/<idea>`).
+3. Follow existing structure and style; add tests/docs when relevant.
+4. Submit a PR with clear context and any supporting logs/screenshots.
+
+Released under the **MIT License**. See `LICENSE` for details.
+
+---
+
+### 📬 Support
+- Review this README plus DEPLOYMENT.md, TESTING.md, UTILITY_COMMANDS.md.
+- Inspect `logs/` and real-time console output for diagnostics.
+- Open a GitHub issue with reproduction steps if you get stuck.
+
+### 🙏 Credits
+- [whatsapp-web.js](https://github.com/pedroslopez/whatsapp-web.js)
+- Node.js ecosystem contributors (axios, express, puppeteer, sharp, qrcode-terminal, etc.)
+
+Built with ❤️ to unlock reliable WhatsApp automation.
 
 ### Step 5: Scan QR Code
 

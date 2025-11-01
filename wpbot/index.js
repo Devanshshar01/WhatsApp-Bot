@@ -1,12 +1,20 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const fs = require('fs-extra');
-const path = require('path');
 const config = require('./config');
 const logger = require('./utils/logger');
 const database = require('./database/database');
 const messageHandler = require('./events/messageHandler');
 const groupHandler = require('./events/groupHandler');
+const commandHandler = require('./utils/commandHandler');
+const startAdminServer = require('./admin/server');
+
+const runtimeState = {
+    isReady: false,
+    qrCode: null,
+    readyAt: null,
+    startTime: Date.now()
+};
 
 // Initialize directories
 const initDirectories = () => {
@@ -53,11 +61,13 @@ client.on('qr', (qr) => {
     logger.info('QR Code received. Scan with WhatsApp:');
     qrcode.generate(qr, { small: true });
     logger.info('QR code generated. Please scan with your WhatsApp mobile app.');
+    runtimeState.qrCode = qr;
 });
 
 // Authentication
 client.on('authenticated', () => {
     logger.success('✅ Authentication successful!');
+    runtimeState.qrCode = null;
 });
 
 client.on('auth_failure', (msg) => {
@@ -70,10 +80,10 @@ client.on('ready', async () => {
     logger.info(`Bot Name: ${config.botName}`);
     logger.info(`Prefix: ${config.prefix}`);
     logger.info(`Owner Numbers: ${config.ownerNumbers.join(', ')}`);
-    
-    // Initialize database
-    database.init();
-    logger.success('Database initialized');
+
+    runtimeState.isReady = true;
+    runtimeState.readyAt = Date.now();
+    runtimeState.qrCode = null;
 });
 
 // Message Handler
@@ -125,6 +135,7 @@ client.on('group_leave', async (notification) => {
 client.on('disconnected', (reason) => {
     logger.warn('⚠️ Client was disconnected:', reason);
     logger.info('Attempting to reconnect...');
+    runtimeState.isReady = false;
 });
 
 // Loading Screen
@@ -162,6 +173,23 @@ process.on('unhandledRejection', (reason, promise) => {
     try {
         logger.info('Starting WhatsApp Bot...');
         initDirectories();
+        database.init();
+
+        startAdminServer({
+            config,
+            database,
+            logger,
+            commandHandler,
+            runtime: {
+                getIsReady: () => runtimeState.isReady,
+                getQrCode: () => runtimeState.qrCode,
+                getClientInfo: () => client.info || null,
+                getReadyAt: () => runtimeState.readyAt,
+                getStartTime: () => runtimeState.startTime
+            },
+            getClient: () => client
+        });
+
         await client.initialize();
     } catch (error) {
         logger.error('Failed to initialize client:', error);

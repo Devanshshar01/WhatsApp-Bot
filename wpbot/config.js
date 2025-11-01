@@ -28,6 +28,15 @@ module.exports = {
     // Logging
     logLevel: process.env.LOG_LEVEL || 'info',
     enableMessageLogging: process.env.ENABLE_MESSAGE_LOGGING === 'true',
+
+    // Admin Panel
+    admin: {
+        password: process.env.ADMIN_PASSWORD || '',
+        jwtSecret: process.env.ADMIN_JWT_SECRET || 'change-me',
+        sessionExpirySeconds: parseInt(process.env.ADMIN_SESSION_EXPIRY || '3600', 10),
+        jwtCookieName: process.env.ADMIN_SESSION_COOKIE || 'wpbot_admin',
+        port: parseInt(process.env.ADMIN_PORT || '4000', 10)
+    },
     
     // Auto Response Messages
     autoResponses: {

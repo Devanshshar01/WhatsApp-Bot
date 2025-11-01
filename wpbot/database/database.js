@@ -11,7 +11,14 @@ class BotDatabase {
             groups: {},
             groupSettings: {},
             warnings: [],
-            commandStats: []
+            commandStats: [],
+            settings: {
+                features: {},
+                commandToggles: {}
+            },
+            analytics: {
+                totalMessagesProcessed: 0
+            }
         };
     }
 
@@ -37,6 +44,10 @@ class BotDatabase {
             this.data.groupSettings = this.data.groupSettings || {};
             this.data.warnings = this.data.warnings || [];
             this.data.commandStats = this.data.commandStats || [];
+            this.data.settings = this.data.settings || { features: {}, commandToggles: {} };
+            this.data.settings.features = this.data.settings.features || {};
+            this.data.settings.commandToggles = this.data.settings.commandToggles || {};
+            this.data.analytics = this.data.analytics || { totalMessagesProcessed: 0 };
 
             // Save initialized structure
             this.save();
@@ -74,7 +85,9 @@ class BotDatabase {
     }
 
     createOrUpdateUser(userId, name, phone) {
-        if (!this.data.users[userId]) {
+        const isNew = !this.data.users[userId];
+
+        if (isNew) {
             this.data.users[userId] = {
                 id: userId,
                 name: name,
@@ -88,10 +101,17 @@ class BotDatabase {
             this.data.users[userId].name = name;
             this.data.users[userId].phone = phone;
             this.data.users[userId].last_seen = Date.now();
-            this.data.users[userId].message_count++;
         }
+
+        this.data.users[userId].message_count++;
+        this.data.analytics.totalMessagesProcessed++;
         this.save();
         return this.data.users[userId];
+    }
+
+    getAllUsers() {
+        return Object.values(this.data.users)
+            .sort((a, b) => (b.last_seen || 0) - (a.last_seen || 0));
     }
 
     blockUser(userId) {
@@ -111,6 +131,10 @@ class BotDatabase {
     isUserBlocked(userId) {
         const user = this.getUser(userId);
         return user ? user.is_blocked === true : false;
+    }
+
+    getUserCount() {
+        return Object.keys(this.data.users).length;
     }
 
     /**
@@ -139,6 +163,15 @@ class BotDatabase {
         }
         this.save();
         return this.data.groups[groupId];
+    }
+
+    getAllGroups() {
+        return Object.values(this.data.groups)
+            .sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+    }
+
+    getGroupCount() {
+        return Object.keys(this.data.groups).length;
     }
 
     updateGroupSettings(groupId, settings) {
@@ -225,6 +258,59 @@ class BotDatabase {
             .map(([command, count]) => ({ command, count }))
             .sort((a, b) => b.count - a.count)
             .slice(0, limit);
+    }
+
+    /**
+     * Command toggle helpers
+     */
+    setCommandEnabled(commandName, enabled) {
+        this.data.settings.commandToggles[commandName] = !!enabled;
+        this.save();
+    }
+
+    isCommandEnabled(commandName) {
+        const toggles = this.data.settings.commandToggles || {};
+        if (typeof toggles[commandName] === 'boolean') {
+            return toggles[commandName];
+        }
+        return true;
+    }
+
+    getCommandToggles() {
+        return { ...this.data.settings.commandToggles };
+    }
+
+    /**
+     * Feature flag helpers
+     */
+    setFeatureFlag(flag, value) {
+        this.data.settings.features[flag] = !!value;
+        this.save();
+    }
+
+    getFeatureFlag(flag, defaultValue = false) {
+        if (typeof this.data.settings.features[flag] === 'boolean') {
+            return this.data.settings.features[flag];
+        }
+        return defaultValue;
+    }
+
+    getFeatureFlags(defaults = {}) {
+        return {
+            ...defaults,
+            ...this.data.settings.features
+        };
+    }
+
+    /**
+     * Analytics helpers
+     */
+    getAnalytics() {
+        return {
+            totalMessagesProcessed: this.data.analytics.totalMessagesProcessed || 0,
+            totalUsers: this.getUserCount(),
+            totalGroups: this.getGroupCount()
+        };
     }
 
     /**

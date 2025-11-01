@@ -45,7 +45,8 @@ class MessageHandler {
             }
 
             // Check for spam
-            if (config.features.antiSpam && cooldown.isSpamming(userId)) {
+            const antiSpamEnabled = database.getFeatureFlag('antiSpam', config.features.antiSpam);
+            if (antiSpamEnabled && cooldown.isSpamming(userId)) {
                 logger.warn(`Spam detected from ${userId}`);
                 await message.reply('⚠️ Please slow down! You are sending messages too quickly.');
                 return;
@@ -70,7 +71,8 @@ class MessageHandler {
             }
 
             // Auto-response for greetings
-            if (config.features.autoResponse) {
+            const autoResponseEnabled = database.getFeatureFlag('autoResponse', config.features.autoResponse);
+            if (autoResponseEnabled) {
                 await this.handleAutoResponse(message, body);
             }
 
@@ -143,7 +145,8 @@ class MessageHandler {
         if (isAdmin || isOwner) return;
 
         // Anti-link filter
-        if (group.anti_link === 1 && helpers.containsURL(body)) {
+        const antiLinkFeatureEnabled = database.getFeatureFlag('antiLink', config.features.antiLink);
+        if (antiLinkFeatureEnabled && group.anti_link === 1 && helpers.containsURL(body)) {
             const urls = helpers.extractURLs(body);
             const hasDisallowedLink = urls.some(url => {
                 return !config.groupSettings.antiLink.allowedDomains.some(domain => 
@@ -168,7 +171,8 @@ class MessageHandler {
         }
 
         // Profanity filter
-        if (group.profanity_filter === 1 && helpers.containsProfanity(body)) {
+        const profanityFeatureEnabled = database.getFeatureFlag('profanityFilter', config.features.profanityFilter);
+        if (profanityFeatureEnabled && group.profanity_filter === 1 && helpers.containsProfanity(body)) {
             logger.warn(`Profanity detected in group ${groupId} from ${userId}`);
             
             try {

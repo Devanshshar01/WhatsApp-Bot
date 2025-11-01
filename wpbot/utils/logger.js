@@ -5,18 +5,36 @@ const moment = require('moment');
 
 class Logger {
     constructor() {
-        this.logFile = path.join(__dirname, '../logs', `bot-${moment().format('YYYY-MM-DD')}.log`);
+        this.logDir = path.join(__dirname, '../logs');
+        this.currentDate = this.getCurrentDate();
+        this.logFile = this.buildLogFilePath(this.currentDate);
         this.ensureLogFile();
     }
 
+    getCurrentDate() {
+        return moment().format('YYYY-MM-DD');
+    }
+
+    buildLogFilePath(date) {
+        return path.join(this.logDir, `bot-${date}.log`);
+    }
+
     ensureLogFile() {
-        const logDir = path.dirname(this.logFile);
-        if (!fs.existsSync(logDir)) {
-            fs.mkdirSync(logDir, { recursive: true });
+        fs.ensureDirSync(this.logDir);
+        fs.ensureFileSync(this.logFile);
+    }
+
+    refreshLogFile() {
+        const today = this.getCurrentDate();
+        if (today !== this.currentDate) {
+            this.currentDate = today;
+            this.logFile = this.buildLogFilePath(today);
+            this.ensureLogFile();
         }
     }
 
     writeToFile(message) {
+        this.refreshLogFile();
         const timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
         const logMessage = `[${timestamp}] ${message}\n`;
         fs.appendFileSync(this.logFile, logMessage);
@@ -63,6 +81,27 @@ class Logger {
         const body = message.body || '[Media/No Text]';
         const msg = `Message from ${from}: ${body.substring(0, 100)}`;
         this.writeToFile(`[MESSAGE] ${msg}`);
+    }
+
+    getLogFilePath() {
+        this.refreshLogFile();
+        return this.logFile;
+    }
+
+    getLatestLogLines(limit = 200) {
+        try {
+            const filePath = this.getLogFilePath();
+            if (!fs.existsSync(filePath)) {
+                return [];
+            }
+
+            const fileContent = fs.readFileSync(filePath, 'utf8');
+            const lines = fileContent.split(/\r?\n/).filter(Boolean);
+            return lines.slice(-limit);
+        } catch (error) {
+            console.error('[LOGGER] Failed to read log file:', error);
+            return [];
+        }
     }
 }
 

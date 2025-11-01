@@ -82,6 +82,14 @@ class CommandHandler {
         }
 
         try {
+            const canonicalName = command.name;
+
+            if (!database.isCommandEnabled(canonicalName)) {
+                logger.warn(`Command ${canonicalName} is disabled via admin panel`);
+                await message.reply('⚠️ This command is currently disabled by the administrator.');
+                return true;
+            }
+
             // Check if user is blocked
             const userId = message.author || message.from;
             if (database.isUserBlocked(userId)) {
@@ -163,6 +171,20 @@ class CommandHandler {
         }
         
         return Array.from(uniqueCommands.values());
+    }
+
+    getCommandMetadata() {
+        return this.getAllCommands().map((command) => ({
+            name: command.name,
+            description: command.description || '',
+            usage: command.usage || '',
+            category: command.category || 'general',
+            cooldown: command.cooldown || config.commandCooldown,
+            ownerOnly: !!command.ownerOnly,
+            adminOnly: !!command.adminOnly,
+            groupOnly: !!command.groupOnly,
+            enabled: database.isCommandEnabled(command.name)
+        }));
     }
 }
 
