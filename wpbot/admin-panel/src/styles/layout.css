@@ -1,18 +1,50 @@
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #0f172a 0%, #111827 100%);
+  color: #e2e8f0;
+}
+
 .layout-container {
-  display: flex;
+  display: grid;
+  grid-template-columns: 260px 1fr;
   min-height: 100vh;
-  background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.12), transparent 45%),
-    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.12), transparent 45%),
-    #0f172a;
+  backdrop-filter: blur(8px);
+}
+
+@media (max-width: 960px) {
+  .layout-container {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 220px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 10;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main-shell {
+    margin-left: 0;
+  }
 }
 
 .sidebar {
-  width: 260px;
-  background: rgba(15, 23, 42, 0.85);
-  border-right: 1px solid rgba(148, 163, 184, 0.2);
-  backdrop-filter: blur(18px);
+  background: rgba(15, 23, 42, 0.82);
+  border-right: 1px solid rgba(148, 163, 184, 0.08);
   display: flex;
   flex-direction: column;
+  padding: 28px 24px;
+  gap: 28px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
 }
 
 .sidebar-header {
@@ -20,10 +52,10 @@
 }
 
 .sidebar-header h1 {
-  font-size: 1.4rem;
+  font-size: 1.6rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
   color: #f8fafc;
+  margin: 0;
 }
 
 .nav-section {
@@ -33,22 +65,43 @@
 
 .nav-section-title {
   font-size: 0.75rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(148, 163, 184, 0.8);
-  margin-bottom: 12px;
+  letter-spacing: 0.14em;
+  color: rgba(148, 163, 184, 0.75);
+  margin-bottom: 14px;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
-  margin-bottom: 8px;
-  border-radius: 10px;
-  color: rgba(226, 232, 240, 0.8);
+  padding: 12px;
+  border-radius: 12px;
+  color: rgba(226, 232, 240, 0.78);
+  text-decoration: none;
   transition: all 0.2s ease;
   font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-link::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.12), rgba(129, 140, 248, 0.12));
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.nav-link:hover::before,
+.nav-link.active::before {
+  opacity: 1;
+}
+
+.nav-link span {
+  z-index: 1;
 }
 
 .nav-link span.icon {
@@ -61,62 +114,62 @@
 }
 
 .nav-link.active {
-  background: linear-gradient(120deg, rgba(59, 130, 246, 0.3), rgba(16, 185, 129, 0.24));
-  color: #fff;
-  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.2);
+  color: #f8fafc;
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.4);
 }
 
 .sidebar-footer {
   margin-top: auto;
-  padding: 24px;
-  border-top: 1px solid rgba(148, 163, 184, 0.16);
+  padding-top: 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.08);
 }
 
 .logout-button {
   width: 100%;
-  padding: 12px 16px;
-  border-radius: 10px;
-  border: none;
-  background: rgba(239, 68, 68, 0.18);
-  color: #fca5a5;
-  font-weight: 600;
-  transition: background 0.2s ease, color 0.2s ease;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(248, 250, 252, 0.18);
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.08), rgba(148, 163, 184, 0.08));
+  color: #f8fafc;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .logout-button:hover {
-  background: rgba(239, 68, 68, 0.28);
-  color: #fecaca;
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.2), rgba(239, 68, 68, 0.18));
+  border-color: rgba(239, 68, 68, 0.45);
 }
 
 .main-shell {
-  flex: 1;
   display: flex;
   flex-direction: column;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(12px);
 }
 
 .topbar {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   padding: 24px 32px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(18px);
 }
 
 .topbar h2 {
+  margin: 0;
   font-size: 1.5rem;
-  font-weight: 700;
-  color: #e2e8f0;
+  font-weight: 600;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
 }
 
 .content {
   flex: 1;
   padding: 32px;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
 }
 
 .card {

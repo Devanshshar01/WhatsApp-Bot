@@ -26,7 +26,11 @@ class MessageHandler {
 
             // Get contact and update database
             const contact = await message.getContact();
-            const userId = message.author || message.from;
+            const userId = helpers.getMessageActorId(message);
+            if (!userId) {
+                logger.warn('Unable to resolve message actor, skipping processing');
+                return;
+            }
             const userName = contact.pushname || contact.name || 'Unknown';
             const userNumber = contact.number || userId.split('@')[0];
             
@@ -56,6 +60,13 @@ class MessageHandler {
             const body = message.body || '';
             console.log('[DEBUG] Message body:', body);
             console.log('[DEBUG] Prefix check:', body.startsWith(config.prefix), 'Prefix:', config.prefix);
+
+            if (message.from.endsWith('@g.us')) {
+                const muteHandled = await this.handleMuteEnforcement(client, message, contact);
+                if (muteHandled) {
+                    return;
+                }
+            }
 
             // Handle group-specific filters (but don't return if it's a command)
             if (message.from.endsWith('@g.us') && !body.startsWith(config.prefix)) {
@@ -137,7 +148,11 @@ class MessageHandler {
             return;
         }
 
-        const userId = message.author || message.from;
+        const userId = helpers.getMessageActorId(message);
+        if (!userId) {
+            logger.warn('Unable to resolve actor for group filters');
+            return;
+        }
         const isAdmin = await helpers.isGroupAdmin(message);
         const isOwner = helpers.isOwner(userId);
 
@@ -185,6 +200,65 @@ class MessageHandler {
                 logger.error('Error deleting message with profanity:', error);
             }
         }
+    }
+
+    async handleMuteEnforcement(client, message, contact) {
+        if (!message.from.endsWith('@g.us')) {
+            return false;
+        }
+
+        const userId = helpers.getMessageActorId(message);
+        if (!userId) {
+            logger.warn('Unable to resolve actor for mute enforcement');
+            return false;
+        }
+        const groupId = message.from;
+        const activeMute = database.getActiveMute(userId, groupId);
+
+        if (!activeMute) {
+            return false;
+        }
+
+        const isBotAdmin = await helpers.isBotGroupAdmin(message);
+        if (isBotAdmin) {
+            try {
+                await message.delete(true);
+            } catch (error) {
+                logger.error('Error deleting message from muted user:', error);
+            }
+        } else {
+            logger.warn('Bot lacks admin permissions to delete muted messages in group:', groupId);
+        }
+
+        const now = Date.now();
+        const shouldNotify = !activeMute.last_notified_at || (now - activeMute.last_notified_at) > 60000;
+
+        if (shouldNotify) {
+            let targetContact = contact;
+            if (!targetContact) {
+                try {
+                    targetContact = await client.getContactById(userId);
+                } catch (error) {
+                    logger.error('Failed to fetch contact for muted notification:', error);
+                }
+            }
+
+            const remaining = activeMute.expires_at ? Math.max(activeMute.expires_at - now, 0) : null;
+            const durationText = remaining ? helpers.formatDuration(remaining) : 'until further notice';
+            const reason = activeMute.reason || 'No reason provided';
+            const mentionText = targetContact?.number ? `@${targetContact.number}` : 'This user';
+            const options = targetContact ? { mentions: [targetContact] } : undefined;
+
+            await message.reply(
+                `🚫 ${mentionText} is currently muted for ${durationText}.\nReason: ${reason}`,
+                null,
+                options
+            );
+
+            database.touchMuteNotification(activeMute.id);
+        }
+
+        return true;
     }
 }
 

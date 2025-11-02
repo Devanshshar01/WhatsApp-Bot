@@ -74,3 +74,50 @@ export async function updateFeatureFlags(features) {
   const { data } = await adminClient.patch('/settings/features', { features });
   return data;
 }
+
+export async function fetchModerationOverview() {
+  const { data } = await adminClient.get('/moderation/overview');
+  return data;
+}
+
+export async function fetchModerationDetail(userId, { groupId } = {}) {
+  const params = {};
+  if (groupId) params.groupId = groupId;
+  const { data } = await adminClient.get(`/moderation/users/${encodeURIComponent(userId)}`, { params });
+  return data;
+}
+
+export async function fetchModerationLogs(limit = 50) {
+  const { data } = await adminClient.get('/moderation/logs', { params: { limit } });
+  return data;
+}
+
+export async function warnUser(payload) {
+  const { data } = await adminClient.post('/moderation/warn', payload);
+  return data;
+}
+
+export async function muteUser(payload) {
+  const { data } = await adminClient.post('/moderation/mute', payload);
+  return data;
+}
+
+export async function unmuteUser(payload) {
+  const { data } = await adminClient.post('/moderation/unmute', payload);
+  return data;
+}
+
+export async function clearWarnings(payload) {
+  const { data } = await adminClient.post('/moderation/clear-warnings', payload);
+  return data;
+}
+
+export async function clearMutes(payload) {
+  const { data } = await adminClient.post('/moderation/clear-mutes', payload);
+  return data;
+}
+
+export async function deleteModerationCase(caseId) {
+  const { data } = await adminClient.delete(`/moderation/cases/${encodeURIComponent(caseId)}`);
+  return data;
+}

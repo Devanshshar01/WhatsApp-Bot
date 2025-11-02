@@ -6,6 +6,7 @@ import '../styles/layout.css';
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: '📊' },
   { to: '/users', label: 'Users', icon: '🧑‍🤝‍🧑' },
+  { to: '/moderation', label: 'Moderation', icon: '🛡️' },
   { to: '/groups', label: 'Groups', icon: '👥' },
   { to: '/commands', label: 'Commands', icon: '⚙️' },
   { to: '/messages', label: 'Send Message', icon: '✉️' },

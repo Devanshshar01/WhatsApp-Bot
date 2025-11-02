@@ -5,6 +5,7 @@ module.exports = {
     aliases: ['setwelcome'],
     description: 'Set custom welcome message for group',
     usage: '/welcome <on|off|set message>',
+    category: 'admin',
     groupOnly: true,
     adminOnly: true,
     cooldown: 5000,

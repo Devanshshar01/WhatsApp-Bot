@@ -3,6 +3,7 @@ const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
+const helpers = require('../utils/helpers');
 
 /**
  * Start the admin panel server.
@@ -286,6 +287,310 @@ function startAdminServer({
     });
 
     return res.json({ success: true, features: database.getFeatureFlags(config.features) });
+  });
+
+  router.get('/moderation/overview', requireAuth, (req, res) => {
+    const overview = database.getModerationOverview();
+    return res.json({ overview });
+  });
+
+  router.get('/moderation/users/:id', requireAuth, (req, res) => {
+    const { id } = req.params;
+    const { groupId } = req.query;
+    const detail = database.getModerationDetail(id, groupId || null);
+
+    if (!detail) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const logs = database.getModerationLogs({ userId: id, groupId: groupId || null, limit: 100 });
+    return res.json({ detail, logs });
+  });
+
+  router.get('/moderation/logs', requireAuth, (req, res) => {
+    const limitParam = parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(limitParam) ? Math.min(Math.max(limitParam, 1), 200) : 50;
+    const logs = database.getModerationLogs({ limit });
+    return res.json({ logs });
+  });
+
+  router.post('/moderation/warn', requireAuth, async (req, res) => {
+    const { userId, groupId, reason } = req.body || {};
+
+    if (!userId || !groupId) {
+      return res.status(400).json({ error: 'userId and groupId are required' });
+    }
+
+    try {
+      const actor = 'admin:panel';
+      const result = database.addWarning(userId, groupId, reason || 'No reason provided', actor);
+
+      const response = {
+        success: true,
+        warning: result.warning,
+        totalWarnings: result.totalWarnings,
+        autoMute: result.autoMute,
+        caseId: result.caseId,
+      };
+
+      const client = getClient();
+      if (client && runtime.getIsReady()) {
+        try {
+          const contact = await client.getContactById(userId);
+          const mentionTarget = contact?.number ? `@${contact.number}` : 'User';
+          const mentionOptions = contact ? { mentions: [contact] } : undefined;
+
+          await client.sendMessage(
+            groupId,
+            `⚠️ Warning issued to ${mentionTarget}\n• Reason: ${reason || 'No reason provided'}\n• Total warnings: ${result.totalWarnings}`,
+            mentionOptions
+          );
+
+          if (result.autoMute) {
+            const remaining = result.autoMute.expires_at ? Math.max(result.autoMute.expires_at - Date.now(), 0) : null;
+            const durationText = remaining ? helpers.formatDuration(remaining) : '30 minutes';
+            await client.sendMessage(
+              groupId,
+              `🚫 ${mentionTarget} has been automatically muted for ${durationText}.`,
+              mentionOptions
+            );
+          }
+        } catch (error) {
+          logger.error('[ADMIN] Failed to send warn notification message:', error.message || error);
+        }
+      }
+
+      return res.json(response);
+    } catch (error) {
+      logger.error('[ADMIN] Failed to warn user via admin panel:', error);
+      return res.status(500).json({ error: 'Failed to warn user' });
+    }
+  });
+
+  router.post('/moderation/mute', requireAuth, async (req, res) => {
+    const { userId, groupId, durationMs, durationText, reason } = req.body || {};
+
+    if (!userId || !groupId) {
+      return res.status(400).json({ error: 'userId and groupId are required' });
+    }
+
+    const client = getClient();
+    const actor = 'admin:panel';
+
+    try {
+      if (database.getActiveMute(userId, groupId)) {
+        return res.status(409).json({ error: 'User is already muted in this group' });
+      }
+
+      const parsedDurationMs = typeof durationMs === 'number' && Number.isFinite(durationMs)
+        ? Math.max(durationMs, 0)
+        : helpers.parseDuration(durationText || '', 30);
+
+      const mute = database.addMute(
+        userId,
+        groupId,
+        parsedDurationMs,
+        reason || 'Muted by admin',
+        actor
+      );
+
+      if (client && runtime.getIsReady()) {
+        try {
+          const contact = await client.getContactById(userId);
+          const mentionTarget = contact?.number ? `@${contact.number}` : 'User';
+          const mentionOptions = contact ? { mentions: [contact] } : undefined;
+          const remaining = mute.expires_at ? Math.max(mute.expires_at - Date.now(), 0) : null;
+          const niceDuration = remaining ? helpers.formatDuration(remaining) : 'until further notice';
+
+          await client.sendMessage(
+            groupId,
+            `🚫 ${mentionTarget} has been muted for ${niceDuration}.\nReason: ${reason || 'Muted by admin'}`,
+            mentionOptions
+          );
+        } catch (error) {
+          logger.error('[ADMIN] Failed to send mute notification message:', error.message || error);
+        }
+      }
+
+      return res.json({ success: true, mute });
+    } catch (error) {
+      logger.error('[ADMIN] Failed to mute user via admin panel:', error);
+      return res.status(500).json({ error: 'Failed to mute user' });
+    }
+  });
+
+  router.post('/moderation/clear-warnings', requireAuth, async (req, res) => {
+    const { userId, scope = 'group', groupId, reason } = req.body || {};
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    if (scope !== 'all' && !groupId) {
+      return res.status(400).json({ error: 'groupId is required when scope is not "all"' });
+    }
+
+    try {
+      const actor = 'admin:panel';
+      let result;
+
+      if (scope === 'all') {
+        result = database.clearAllWarningsForUser(userId);
+      } else {
+        result = database.clearUserWarnings(userId, groupId);
+      }
+
+      if (!result || result.cleared === 0) {
+        return res.status(404).json({ error: 'No warnings found for the specified scope.' });
+      }
+
+      database.addModerationLog('unwarn', {
+        user_id: userId,
+        group_id: scope === 'all' ? null : groupId,
+        reason: reason || 'Warnings cleared by admin',
+        actor,
+        cleared: result.cleared,
+        case_ids: result.caseIds
+      });
+
+      const client = getClient();
+      if (client && runtime.getIsReady() && scope !== 'all') {
+        try {
+          const contact = await client.getContactById(userId);
+          const mentionTarget = contact?.number ? `@${contact.number}` : 'User';
+          const mentionOptions = contact ? { mentions: [contact] } : undefined;
+          await client.sendMessage(
+            groupId,
+            `✅ ${mentionTarget} warnings have been cleared.\nReason: ${reason || 'Warnings cleared by admin'}\nTotal cleared: ${result.cleared}`,
+            mentionOptions
+          );
+        } catch (error) {
+          logger.error('[ADMIN] Failed to send clear warning notification message:', error.message || error);
+        }
+      }
+
+      return res.json({ success: true, cleared: result.cleared, caseIds: result.caseIds });
+    } catch (error) {
+      logger.error('[ADMIN] Failed to clear warnings via admin panel:', error);
+      return res.status(500).json({ error: 'Failed to clear warnings' });
+    }
+  });
+
+  router.post('/moderation/clear-mutes', requireAuth, async (req, res) => {
+    const { userId, scope = 'group', groupId, reason } = req.body || {};
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+
+    if (scope !== 'all' && !groupId) {
+      return res.status(400).json({ error: 'groupId is required when scope is not "all"' });
+    }
+
+    try {
+      const actor = 'admin:panel';
+      let result;
+
+      if (scope === 'all') {
+        result = database.clearAllMutesForUser(userId);
+      } else {
+        result = database.clearUserMutes(userId, groupId);
+      }
+
+      if (!result || result.cleared === 0) {
+        return res.status(404).json({ error: 'No mutes found for the specified scope.' });
+      }
+
+      database.addModerationLog('clear_mute', {
+        user_id: userId,
+        group_id: scope === 'all' ? null : groupId,
+        reason: reason || 'Mutes cleared by admin',
+        actor,
+        cleared: result.cleared,
+        case_ids: result.caseIds
+      });
+
+      const client = getClient();
+      if (client && runtime.getIsReady() && scope !== 'all') {
+        try {
+          const contact = await client.getContactById(userId);
+          const mentionTarget = contact?.number ? `@${contact.number}` : 'User';
+          const mentionOptions = contact ? { mentions: [contact] } : undefined;
+          await client.sendMessage(
+            groupId,
+            `✅ ${mentionTarget} mute history has been cleared.\nReason: ${reason || 'Mutes cleared by admin'}\nTotal cleared: ${result.cleared}`,
+            mentionOptions
+          );
+        } catch (error) {
+          logger.error('[ADMIN] Failed to send clear mute notification message:', error.message || error);
+        }
+      }
+
+      return res.json({ success: true, cleared: result.cleared, caseIds: result.caseIds });
+    } catch (error) {
+      logger.error('[ADMIN] Failed to clear mutes via admin panel:', error);
+      return res.status(500).json({ error: 'Failed to clear mutes' });
+    }
+  });
+
+  router.post('/moderation/unmute', requireAuth, async (req, res) => {
+    const { userId, groupId, reason } = req.body || {};
+
+    if (!userId || !groupId) {
+      return res.status(400).json({ error: 'userId and groupId are required' });
+    }
+
+    try {
+      const actor = 'admin:panel';
+      const mute = database.removeMute(userId, groupId, actor, reason || 'Unmuted by admin');
+
+      if (!mute) {
+        return res.status(404).json({ error: 'User is not muted in this group' });
+      }
+
+      const client = getClient();
+      if (client && runtime.getIsReady()) {
+        try {
+          const contact = await client.getContactById(userId);
+          const mentionTarget = contact?.number ? `@${contact.number}` : 'User';
+          const mentionOptions = contact ? { mentions: [contact] } : undefined;
+
+          await client.sendMessage(
+            groupId,
+            `✅ ${mentionTarget} has been unmuted.\nReason: ${reason || 'Mute lifted by admin'}`,
+            mentionOptions
+          );
+        } catch (error) {
+          logger.error('[ADMIN] Failed to send unmute notification message:', error.message || error);
+        }
+      }
+
+      return res.json({ success: true, mute });
+    } catch (error) {
+      logger.error('[ADMIN] Failed to unmute user via admin panel:', error);
+      return res.status(500).json({ error: 'Failed to unmute user' });
+    }
+  });
+
+  router.delete('/moderation/cases/:caseId', requireAuth, (req, res) => {
+    const { caseId } = req.params;
+
+    if (!caseId) {
+      return res.status(400).json({ error: 'caseId is required' });
+    }
+
+    try {
+      const result = database.deleteModerationCase(caseId);
+
+      if (!result) {
+        return res.status(404).json({ error: 'Case not found' });
+      }
+
+      return res.json({ success: true, case: result });
+    } catch (error) {
+      logger.error('[ADMIN] Failed to delete moderation case via admin panel:', error);
+      return res.status(500).json({ error: 'Failed to delete moderation case' });
+    }
   });
 
   app.use('/admin/api', router);

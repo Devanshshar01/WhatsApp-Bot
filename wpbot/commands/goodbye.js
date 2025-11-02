@@ -5,6 +5,7 @@ module.exports = {
     aliases: ['setgoodbye'],
     description: 'Set custom goodbye message for group',
     usage: '/goodbye <on|off|set message>',
+    category: 'admin',
     groupOnly: true,
     adminOnly: true,
     cooldown: 5000,

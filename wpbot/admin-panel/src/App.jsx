@@ -10,6 +10,7 @@ import CommandsPage from './pages/CommandsPage.jsx';
 import LogsPage from './pages/LogsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import MessagesPage from './pages/MessagesPage.jsx';
+import ModerationPage from './pages/ModerationPage.jsx';
 
 function PrivateRoute({ children }) {
   const { loading, isAuthenticated } = useAuthContext();
@@ -44,6 +45,7 @@ function App() {
         <Route index element={<DashboardPage />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="users" element={<UsersPage />} />
+        <Route path="moderation" element={<ModerationPage />} />
         <Route path="groups" element={<GroupsPage />} />
         <Route path="commands" element={<CommandsPage />} />
         <Route path="logs" element={<LogsPage />} />
