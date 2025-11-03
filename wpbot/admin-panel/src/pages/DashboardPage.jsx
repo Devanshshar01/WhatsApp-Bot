@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { fetchDashboard } from '../api/adminClient.js';
 import { useAsync } from '../hooks/useAsync.js';
 import StatCard from '../components/StatCard.jsx';
+import QrCodeCard from '../components/QrCodeCard.jsx';
 
 function DashboardPage() {
   const { data, loading, error, execute } = useAsync(fetchDashboard, { immediate: false, initialData: null });
@@ -41,13 +42,7 @@ function DashboardPage() {
         <StatCard label="Memory (MB)" value={Math.round((dashboard.memoryUsage?.rss ?? 0) / 1048576)} icon="🧠" />
       </div>
 
-      {!dashboard.ready && dashboard.qrCode ? (
-        <div className="card">
-          <h3>QR Code Pending</h3>
-          <p>Scan the QR code with WhatsApp to authenticate the bot. The raw QR payload is shown below:</p>
-          <pre className="monospace" style={{ wordBreak: 'break-all' }}>{dashboard.qrCode}</pre>
-        </div>
-      ) : null}
+      {!dashboard.ready && dashboard.qrCode ? <QrCodeCard qrCode={dashboard.qrCode} /> : null}
 
       <div className="card">
         <div className="flex-between">
