@@ -4,7 +4,7 @@ module.exports = {
     name: 'add',
     aliases: ['invite'],
     description: 'Add member to group',
-    usage: '/add <number>',
+    usage: '/add <international_number>',
     groupOnly: true,
     adminOnly: true,
     cooldown: 5000,
@@ -31,12 +31,7 @@ module.exports = {
             }
 
             // Get phone number
-            let phoneNumber = args[0].replace(/[^0-9]/g, '');
-            
-            // Add country code if not present
-            if (!phoneNumber.startsWith('91') && phoneNumber.length === 10) {
-                phoneNumber = '91' + phoneNumber; // Default to India, change as needed
-            }
+            const phoneNumber = args[0].replace(/[^0-9]/g, '');
 
             const numberId = `${phoneNumber}@c.us`;
 
