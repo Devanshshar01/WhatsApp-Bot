@@ -42,6 +42,12 @@ module.exports = {
                 return;
             }
 
+            const actorId = helpers.getMessageActorId(message);
+            if (targetUser === actorId) {
+                await message.reply('❌ You cannot demote yourself.');
+                return;
+            }
+
             // Don't allow demoting bot owners
             if (helpers.isOwner(targetUser)) {
                 await message.reply('❌ Cannot demote bot owner.');
