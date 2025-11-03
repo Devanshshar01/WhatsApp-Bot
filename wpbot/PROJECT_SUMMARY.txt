@@ -109,36 +109,60 @@ LICENSE: MIT
                             COMMAND CATEGORIES
 ================================================================================
 
-📌 BASIC COMMANDS (4)
-  /help       - Display all commands or help for specific command
-  /menu       - Quick reference menu
-  /ping       - Check bot response time and status
-  /about      - Display bot information and statistics
+📌 BASIC COMMANDS
+  /help        - Command reference and usage for any module
+  /menu        - Category snapshot of the full catalog
+  /ping        - Check bot latency and uptime
+  /about       - Bot information and capabilities overview
+  /profile     - Personal usage stats for a user
 
-🎨 MEDIA COMMANDS (2)
-  /sticker    - Convert images/videos to WhatsApp stickers
-  /download   - Download and save media locally
+🧰 UTILITY COMMANDS
+  /translate   - Translate text into another language
+  /weather     - Current conditions for a city
+  /remind      - One-off reminders (minutes to days)
+  /poll        - Quick poll with options
+  /calc        - Evaluate mathematical expressions
+  /timer       - Countdown or stopwatch controls
+  /define      - Dictionary lookup
+  /currency    - Convert currency amounts
+  /qrcode      - Render text/URLs as QR codes
+  /shorturl    - Shorten long links
 
-👥 GROUP COMMANDS (6)
-  /tagall     - Tag all group members with custom message
-  /add        - Add member to group by phone number
-  /remove     - Remove member from group
-  /promote    - Promote member to admin
-  /demote     - Demote admin to member
-  /groupinfo  - Display detailed group information
+🎨 MEDIA COMMANDS
+  /sticker     - Convert replied media to stickers
+  /download    - Save replied media locally and resend
 
-🛡️ ADMIN COMMANDS (4)
-  /antilink   - Toggle anti-link filter
-  /antispam   - Toggle anti-spam filter
-  /welcome    - Manage welcome messages
-  /goodbye    - Manage goodbye messages
+🎉 FUN COMMANDS
+  /compliment  - Send a wholesome compliment
+  /insult      - Light-hearted roast
+  /flirt       - Pickup lines collection
 
-👑 OWNER COMMANDS (5)
-  /broadcast  - Send message to all groups
-  /block      - Block user from using bot
-  /unblock    - Unblock previously blocked user
-  /leave      - Make bot leave group
-  /stats      - Display detailed bot statistics
+👥 GROUP COMMANDS (ADMIN ONLY)
+  /tagall      - Mention every member
+  /add         - Add participant by number
+  /remove      - Remove participant
+  /promote     - Elevate member to admin
+  /demote      - Demote admin to member
+  /groupinfo   - Group metadata overview
+
+🛡️ MODERATION COMMANDS (ADMIN ONLY)
+  /antilink    - Toggle anti-link protection
+  /antispam    - Toggle anti-spam guard
+  /welcome     - Configure welcome automation
+  /goodbye     - Configure farewell automation
+  /mute        - Temporarily mute a member
+  /unmute      - Lift an active mute
+  /warn        - Issue a warning
+  /unwarn      - Clear warnings
+  /warnings    - View warning history
+  /clear       - Remove a moderation log entry by case ID
+
+👑 OWNER COMMANDS
+  /broadcast   - Message every connected group
+  /block       - Block a user from invoking the bot
+  /unblock     - Restore access for a blocked user
+  /leave       - Force the bot to exit a group
+  /stats       - High-level bot analytics snapshot
 
 ================================================================================
                             DATABASE SCHEMA

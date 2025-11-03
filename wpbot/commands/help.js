@@ -39,73 +39,84 @@ module.exports = {
             }
 
             // Display all commands
-            const commands = commandHandler.getAllCommands();
-            
+            const commands = commandHandler.getAllCommands().filter(cmd => cmd.name !== 'commandname');
+
             const categories = {
-                basic: [],
-                media: [],
-                group: [],
-                admin: [],
-                owner: []
+                basic: { label: '📌 Basic Commands', items: [], seen: new Set() },
+                utility: { label: '🧰 Utility Commands', items: [], seen: new Set() },
+                media: { label: '🎨 Media Commands', items: [], seen: new Set() },
+                fun: { label: '🎉 Fun Commands', items: [], seen: new Set() },
+                group: { label: '👥 Group Commands', items: [], seen: new Set() },
+                admin: { label: '🛡️ Admin Commands', items: [], seen: new Set() },
+                owner: { label: '👑 Owner Commands', items: [], seen: new Set() }
+            };
+
+            const addToCategory = (categoryKey, cmd, entry) => {
+                const category = categories[categoryKey];
+                if (category && !category.seen.has(cmd.name)) {
+                    category.items.push({ name: cmd.name, text: entry });
+                    category.seen.add(cmd.name);
+                }
             };
 
             commands.forEach(cmd => {
+                const entry = `${config.prefix}${cmd.name} - ${cmd.description}`;
+                const normalizedCategory = (cmd.category || '').toLowerCase();
+                let assigned = false;
+
                 if (cmd.ownerOnly) {
-                    categories.owner.push(cmd);
-                } else if (cmd.adminOnly) {
-                    categories.admin.push(cmd);
-                } else if (cmd.groupOnly) {
-                    categories.group.push(cmd);
-                } else if (cmd.category === 'media') {
-                    categories.media.push(cmd);
-                } else {
-                    categories.basic.push(cmd);
+                    addToCategory('owner', cmd, entry);
+                    assigned = true;
                 }
+
+                if (cmd.adminOnly || normalizedCategory === 'admin') {
+                    addToCategory('admin', cmd, entry);
+                    assigned = true;
+                }
+
+                if (cmd.groupOnly) {
+                    addToCategory('group', cmd, entry);
+                    assigned = true;
+                }
+
+                if (normalizedCategory === 'utility') {
+                    addToCategory('utility', cmd, entry);
+                    assigned = true;
+                } else if (normalizedCategory === 'media') {
+                    addToCategory('media', cmd, entry);
+                    assigned = true;
+                } else if (normalizedCategory === 'fun') {
+                    addToCategory('fun', cmd, entry);
+                    assigned = true;
+                }
+
+                if (!assigned) {
+                    addToCategory('basic', cmd, entry);
+                }
+            });
+
+            Object.values(categories).forEach(category => {
+                category.items.sort((a, b) => a.name.localeCompare(b.name));
             });
 
             let helpText = `🤖 *${config.botName} - Command List*\n\n`;
             helpText += `Prefix: *${config.prefix}*\n`;
             helpText += `Total Commands: *${commands.length}*\n\n`;
 
-            if (categories.basic.length > 0) {
-                helpText += `*📌 Basic Commands:*\n`;
-                categories.basic.forEach(cmd => {
-                    helpText += `${config.prefix}${cmd.name} - ${cmd.description}\n`;
-                });
-                helpText += '\n';
-            }
+            const displayOrder = ['basic', 'utility', 'media', 'fun', 'group', 'admin', 'owner'];
 
-            if (categories.media.length > 0) {
-                helpText += `*🎨 Media Commands:*\n`;
-                categories.media.forEach(cmd => {
-                    helpText += `${config.prefix}${cmd.name} - ${cmd.description}\n`;
-                });
-                helpText += '\n';
-            }
+            displayOrder.forEach(key => {
+                const category = categories[key];
+                if (category.items.length === 0) {
+                    return;
+                }
 
-            if (categories.group.length > 0) {
-                helpText += `*👥 Group Commands:*\n`;
-                categories.group.forEach(cmd => {
-                    helpText += `${config.prefix}${cmd.name} - ${cmd.description}\n`;
+                helpText += `*${category.label}:*\n`;
+                category.items.forEach(item => {
+                    helpText += `${item.text}\n`;
                 });
                 helpText += '\n';
-            }
-
-            if (categories.admin.length > 0) {
-                helpText += `*🛡️ Admin Commands:*\n`;
-                categories.admin.forEach(cmd => {
-                    helpText += `${config.prefix}${cmd.name} - ${cmd.description}\n`;
-                });
-                helpText += '\n';
-            }
-
-            if (categories.owner.length > 0) {
-                helpText += `*👑 Owner Commands:*\n`;
-                categories.owner.forEach(cmd => {
-                    helpText += `${config.prefix}${cmd.name} - ${cmd.description}\n`;
-                });
-                helpText += '\n';
-            }
+            });
 
             helpText += `\nType *${config.prefix}help <command>* for detailed info about a specific command.`;
 

@@ -112,33 +112,44 @@ Wait for **Client is ready!**, then interact from any WhatsApp account other tha
 ### Basic
 - `/help [command]` – detailed documentation.
 - `/menu` – category overview.
-- `/ping` – latency & uptime.
-- `/about` – bot metadata.
-- `/profile [@user|reply|number]` – usage stats, last/first seen, block status.
+- `/ping` – latency & uptime check.
+- `/about` – bot metadata and stats.
+- `/profile [@user|reply|number]` – user usage history.
+
+### Utility
+- `/translate <lang> <text>` – instant translation (Google).
+- `/weather <city>` – weather snapshot (wttr.in).
+- `/remind <time> <message>` – reminders from 1 minute to 7 days.
+- `/poll question | opt1 | opt2` – create quick polls.
+- `/calc <expression>` – math evaluation with functions.
+- `/timer start|stop|check [duration]` – countdowns & stopwatch.
+- `/define <word>` – dictionary lookups.
+- `/currency <amount> <from> <to>` – exchange rates.
+- `/qrcode <text>` – generate QR images.
+- `/shorturl <url>` – shorten links (TinyURL API).
 
 ### Media
 - `/sticker` – convert replied media into stickers.
 - `/download` – save media and return the file.
-- `/qrcode <text>` – generate QR images.
-- `/shorturl <url>` – shorten links (TinyURL API).
 
-### Utility
-- `/translate <lang> <text>` – translation (Google).
-- `/weather <city>` – weather snapshot (wttr.in).
-- `/remind <time> <message>` – reminders (1 minute – 7 days).
-- `/poll question | opt1 | opt2` – polls with voting & results.
-- `/calc <expression>` – Math evaluation with parentheses/functions.
-- `/timer start|stop|check [duration]` – timers & stopwatch.
-- `/define <word>` – dictionary lookups.
-- `/currency <amount> <from> <to>` – exchange rates.
-- `/compliment`, `/insult`, `/flirt` – fun interactions with cooldowns.
+### Fun
+- `/compliment [target]` – wholesome compliments.
+- `/insult [target]` – playful roasts.
+- `/flirt [target]` – curated pickup lines.
 
-### Group (Admin/Owner)
-- `/tagall`, `/add`, `/remove`, `/promote`, `/demote`, `/groupinfo`.
-- `/antilink`, `/antispam`, `/welcome`, `/goodbye` toggles.
+### Group (Admin)
+- `/tagall`, `/add`, `/remove`, `/promote`, `/demote`, `/groupinfo` – manage members.
+- `/antilink`, `/antispam` – toggle group protections.
+- `/welcome`, `/goodbye` – automate greetings.
+- `/mute`, `/unmute` – temporary moderation.
+- `/warn`, `/unwarn`, `/warnings` – warning lifecycle.
+- `/clear <caseId>` – delete moderation log entry.
 
 ### Owner
-- `/broadcast`, `/block`, `/unblock`, `/leave`.
+- `/broadcast` – message every group.
+- `/block`, `/unblock` – manage blocked users.
+- `/leave` – force the bot to exit a group.
+- `/stats` – overall bot analytics.
 
 Commands are auto-loaded from `commands/`; use `_template.js` or any existing file as a reference and restart the bot to activate new modules.
 

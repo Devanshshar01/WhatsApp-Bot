@@ -20,6 +20,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.4",
     "axios": "^1.6.2",
     "chalk": "^4.1.2",
     "cookie-parser": "^1.4.6",
@@ -29,6 +32,7 @@
     "moment": "^2.29.4",
     "puppeteer": "^22.0.0",
     "qrcode-terminal": "^0.12.0",
+    "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.1",
