@@ -16,6 +16,12 @@ module.exports = {
         antiLink: process.env.ENABLE_ANTI_LINK === 'true',
         profanityFilter: process.env.ENABLE_PROFANITY_FILTER === 'true'
     },
+
+    // Group Automations
+    groupAutomations: {
+        welcomeMessages: process.env.ENABLE_WELCOME_MESSAGES === 'true',
+        goodbyeMessages: process.env.ENABLE_GOODBYE_MESSAGES === 'true'
+    },
     
     // Rate Limiting
     commandCooldown: parseInt(process.env.COMMAND_COOLDOWN) || 3000,

@@ -8,6 +8,10 @@ class GroupHandler {
      */
     async handleJoin(client, notification) {
         try {
+            if (!config.groupAutomations?.welcomeMessages) {
+                return;
+            }
+
             const chat = await notification.getChat();
             const groupId = notification.chatId;
             
@@ -56,6 +60,10 @@ class GroupHandler {
      */
     async handleLeave(client, notification) {
         try {
+            if (!config.groupAutomations?.goodbyeMessages) {
+                return;
+            }
+
             const chat = await notification.getChat();
             const groupId = notification.chatId;
             
