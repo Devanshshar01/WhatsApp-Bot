@@ -241,6 +241,7 @@ const ensureModerationEligibility = async (client, message, targetUser, options 
     }
 
     const actorId = getMessageActorId(message);
+    const actorNumber = actorId ? actorId.split('@')[0] : null;
 
     if (!allowSelf && targetUser === actorId) {
         return { ok: false, error: '⚠️ You cannot target yourself.' };
@@ -256,14 +257,51 @@ const ensureModerationEligibility = async (client, message, targetUser, options 
     }
 
     const chat = await message.getChat();
-    const targetParticipant = chat.participants.find((participant) => participant.id._serialized === targetUser);
+
+    let actorContact = null;
+    try {
+        actorContact = await message.getContact();
+    } catch (contactError) {
+        console.error('Error fetching contact for moderation eligibility:', contactError);
+    }
+
+    const actorContactId = actorContact && actorContact.id ? actorContact.id._serialized : null;
+    const actorContactNumber = actorContact?.number ? actorContact.number.replace(/\D/g, '') : null;
+
+    const actorCandidateIds = new Set([actorId, actorContactId].filter(Boolean));
+    const actorCandidateNumbers = new Set([
+        actorNumber,
+        actorContactId ? actorContactId.split('@')[0] : null,
+        actorContactNumber
+    ].filter(Boolean));
+
+    let targetParticipant = chat.participants.find((participant) => participant.id._serialized === targetUser);
+    if (!targetParticipant && targetUser) {
+        const targetNumber = targetUser.split('@')[0];
+        targetParticipant = chat.participants.find(
+            (participant) => participant.id.user === targetNumber
+        );
+    }
+
     if (!allowAdminTarget && (targetParticipant?.isAdmin || targetParticipant?.isSuperAdmin)) {
         return { ok: false, error: '⚠️ You cannot moderate another admin.' };
     }
 
     if (requireAdminActor && !isOwner(actorId)) {
-        const actorParticipant = chat.participants.find((participant) => participant.id._serialized === actorId);
-        if (!actorParticipant?.isAdmin && !actorParticipant?.isSuperAdmin) {
+        let actorParticipant = chat.participants.find((participant) => participant.id._serialized === actorId);
+
+        if (!actorParticipant) {
+            actorParticipant = chat.participants.find((participant) =>
+                actorCandidateIds.has(participant.id._serialized) || actorCandidateNumbers.has(participant.id.user)
+            );
+        }
+
+        const actorIsAdmin =
+            actorParticipant?.isAdmin ||
+            actorParticipant?.isSuperAdmin ||
+            (await isGroupAdmin(message));
+
+        if (!actorIsAdmin) {
             return { ok: false, error: '❌ This command requires admin privileges.' };
         }
     }

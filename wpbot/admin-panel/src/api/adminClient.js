@@ -60,6 +60,71 @@ export async function fetchLogs(limit = 200) {
   return data;
 }
 
+export async function fetchCommandSummary({ limit = 10, days = null } = {}) {
+  const { data } = await adminClient.get('/analytics/command-summary', {
+    params: {
+      limit,
+      days,
+    },
+  });
+  return data;
+}
+
+export async function fetchCommandTrend({ days = 7, top = 5 } = {}) {
+  const { data } = await adminClient.get('/analytics/command-trend', {
+    params: {
+      days,
+      top,
+    },
+  });
+  return data;
+}
+
+export async function fetchCommandHeatmap({ days = 7 } = {}) {
+  const { data } = await adminClient.get('/analytics/command-heatmap', {
+    params: {
+      days,
+    },
+  });
+  return data;
+}
+
+export async function fetchTopCommandUsers({ limit = 10, days = null } = {}) {
+  const { data } = await adminClient.get('/analytics/top-users', {
+    params: {
+      limit,
+      days,
+    },
+  });
+  return data;
+}
+
+export async function fetchTopCommandGroups({ limit = 10, days = null } = {}) {
+  const { data } = await adminClient.get('/analytics/top-groups', {
+    params: {
+      limit,
+      days,
+    },
+  });
+  return data;
+}
+
+export function downloadCommandRecordsCSV({ days = null } = {}) {
+  const searchParams = new URLSearchParams();
+  if (days) {
+    searchParams.set('days', days);
+  }
+  window.open(`/admin/api/analytics/command-records.csv?${searchParams.toString()}`, '_blank');
+}
+
+export function downloadCommandRecordsXLSX({ days = null } = {}) {
+  const searchParams = new URLSearchParams();
+  if (days) {
+    searchParams.set('days', days);
+  }
+  window.open(`/admin/api/analytics/command-records.xlsx?${searchParams.toString()}`, '_blank');
+}
+
 export async function sendMessage(target, message) {
   const { data } = await adminClient.post('/messages', { target, message });
   return data;
@@ -102,6 +167,11 @@ export async function muteUser(payload) {
   return data;
 }
 
+export async function kickUser(payload) {
+  const { data } = await adminClient.post('/moderation/kick', payload);
+  return data;
+}
+
 export async function unmuteUser(payload) {
   const { data } = await adminClient.post('/moderation/unmute', payload);
   return data;
@@ -117,7 +187,27 @@ export async function clearMutes(payload) {
   return data;
 }
 
+export async function bulkModerationAction(payload) {
+  const { data } = await adminClient.post('/moderation/bulk', payload);
+  return data;
+}
+
 export async function deleteModerationCase(caseId) {
   const { data } = await adminClient.delete(`/moderation/cases/${encodeURIComponent(caseId)}`);
   return data;
+}
+
+export function subscribeModerationStream(onEvent) {
+  const source = new EventSource('/admin/api/moderation/stream', { withCredentials: true });
+  source.onmessage = (event) => {
+    try {
+      const parsed = JSON.parse(event.data);
+      onEvent(parsed);
+    } catch (error) {
+      console.error('Failed to parse moderation stream event', error);
+    }
+  };
+  return () => {
+    source.close();
+  };
 }

@@ -56,6 +56,76 @@ const client = new Client({
     }
 });
 
+async function syncContactsAndGroups() {
+    try {
+        logger.info('Syncing contacts and groups for admin panel...');
+
+        const contacts = await client.getContacts();
+        let syncedUsers = 0;
+
+        for (const contact of contacts) {
+            if (!contact || contact.isGroup) {
+                continue;
+            }
+
+            const id = contact.id?._serialized;
+            const server = contact.id?.server;
+
+            if (!id || server !== 'c.us') {
+                continue;
+            }
+
+            const name = contact.pushname || contact.name || contact.number || 'Unknown';
+            const phone = contact.number || contact.id?.user || null;
+
+            database.createOrUpdateUser(id, name, phone, { skipStats: true });
+            syncedUsers += 1;
+        }
+
+        const chats = await client.getChats();
+        let syncedGroups = 0;
+
+        for (const chat of chats) {
+            const groupId = chat?.id?._serialized;
+            if (!groupId) {
+                continue;
+            }
+
+            const isGroupChat = Boolean(
+                chat.isGroup ||
+                chat.isAnnouncement ||
+                chat.isCommunity ||
+                groupId.endsWith('@g.us')
+            );
+
+            if (!isGroupChat) {
+                continue;
+            }
+
+            let description = chat.groupMetadata?.desc || chat.description || '';
+            if (!description && typeof chat.fetchGroupMetadata === 'function') {
+                try {
+                    const metadata = await chat.fetchGroupMetadata();
+                    description = metadata?.desc || description;
+                } catch (fetchError) {
+                    logger.debug?.('Failed to fetch group metadata for sync', {
+                        groupId,
+                        error: fetchError?.message
+                    });
+                }
+            }
+
+            const groupName = chat.name || chat.formattedTitle || 'Unnamed group';
+            database.createOrUpdateGroup(groupId, groupName, description);
+            syncedGroups += 1;
+        }
+
+        logger.info(`Synced ${syncedUsers} users and ${syncedGroups} groups.`);
+    } catch (error) {
+        logger.error('Failed to sync contacts and groups:', error);
+    }
+}
+
 // QR Code Generation
 client.on('qr', (qr) => {
     logger.info('QR Code received. Scan with WhatsApp:');
@@ -84,6 +154,8 @@ client.on('ready', async () => {
     runtimeState.isReady = true;
     runtimeState.readyAt = Date.now();
     runtimeState.qrCode = null;
+
+    await syncContactsAndGroups();
 });
 
 // Message Handler

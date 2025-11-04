@@ -531,7 +531,7 @@ CREDITS:
 ================================================================================
 
 TOTAL FILES: 40+
-TOTAL COMMANDS: 20
+TOTAL COMMANDS: 35+
 LINES OF CODE: ~3000+
 DOCUMENTATION PAGES: 7
 SUPPORTED FEATURES: 25+

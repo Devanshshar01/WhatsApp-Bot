@@ -9,6 +9,7 @@ const navItems = [
   { to: '/moderation', label: 'Moderation', icon: '🛡️' },
   { to: '/groups', label: 'Groups', icon: '👥' },
   { to: '/commands', label: 'Commands', icon: '⚙️' },
+  { to: '/analytics', label: 'Analytics', icon: '📈' },
   { to: '/messages', label: 'Send Message', icon: '✉️' },
   { to: '/logs', label: 'Logs', icon: '📜' },
   { to: '/settings', label: 'Settings', icon: '🔐' },

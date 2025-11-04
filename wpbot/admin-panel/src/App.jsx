@@ -11,6 +11,7 @@ import LogsPage from './pages/LogsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import MessagesPage from './pages/MessagesPage.jsx';
 import ModerationPage from './pages/ModerationPage.jsx';
+import AnalyticsPage from './pages/AnalyticsPage.jsx';
 
 function PrivateRoute({ children }) {
   const { loading, isAuthenticated } = useAuthContext();
@@ -48,6 +49,7 @@ function App() {
         <Route path="moderation" element={<ModerationPage />} />
         <Route path="groups" element={<GroupsPage />} />
         <Route path="commands" element={<CommandsPage />} />
+        <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="logs" element={<LogsPage />} />
         <Route path="messages" element={<MessagesPage />} />
         <Route path="settings" element={<SettingsPage />} />

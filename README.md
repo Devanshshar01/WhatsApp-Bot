@@ -111,18 +111,40 @@ The bot can be configured through the `.env` file. Here are some of the most imp
 
 ---
 
-## 📱 Usage
+## 🧰 Command Catalogue
 
-The bot comes with a variety of commands, which are organized into the following categories:
+### Basic
+- `/help [command]` – detailed documentation.
+- `/menu` – category overview.
+- `/ping` – latency & uptime.
+- `/about` – bot metadata.
+- `/profile [@user|reply|number]` – usage stats, last/first seen, block status.
 
-- **Basic**: `/help`, `/menu`, `/ping`, `/about`, `/profile`
-- **Media**: `/sticker`, `/download`, `/qrcode`, `/shorturl`
-- **Utility**: `/translate`, `/weather`, `/remind`, `/poll`, `/calc`, `/timer`, `/define`, `/currency`
-- **Fun**: `/compliment`, `/insult`, `/flirt`
-- **Group (Admin/Owner)**: `/tagall`, `/add`, `/remove`, `/promote`, `/demote`, `/groupinfo`, `/antilink`, `/antispam`, `/welcome`, `/goodbye`
-- **Owner**: `/broadcast`, `/block`, `/unblock`, `/leave`
+### Media
+- `/sticker` – convert replied media into stickers.
+- `/download` – save media and return the file.
+- `/qrcode <text>` – generate QR images.
+- `/shorturl <url>` – shorten links (TinyURL API).
 
-To see a full list of commands and their descriptions, use the `/help` command.
+### Utility
+- `/translate <lang> <text>` – translation (Google).
+- `/weather <city>` – weather snapshot (wttr.in).
+- `/remind <time> <message>` – reminders (1 minute – 7 days).
+- `/poll question | opt1 | opt2` – polls with voting & results.
+- `/calc <expression>` – Math evaluation with parentheses/functions.
+- `/timer start|stop|check [duration]` – timers & stopwatch.
+- `/define <word>` – dictionary lookups.
+- `/currency <amount> <from> <to>` – exchange rates.
+- `/compliment`, `/insult`, `/flirt` – fun interactions with cooldowns.
+
+### Group (Admin/Owner)
+- `/tagall`, `/add`, `/remove`, `/promote`, `/demote`, `/groupinfo`.
+- `/antilink`, `/antispam`, `/welcome`, `/goodbye` toggles.
+
+### Owner
+- `/broadcast`, `/block`, `/unblock`, `/leave`.
+
+Commands are auto-loaded from `commands/`; use `_template.js` or any existing file as a reference and restart the bot to activate new modules.
 
 ---
 

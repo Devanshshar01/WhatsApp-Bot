@@ -1,5 +1,6 @@
 const fs = require('fs-extra');
 const path = require('path');
+const EventEmitter = require('events');
 const config = require('../config');
 const logger = require('../utils/logger');
 
@@ -25,6 +26,7 @@ class BotDatabase {
                 nextCase: 1
             }
         };
+        this.events = new EventEmitter();
     }
 
     _formatCaseId(number) {
@@ -250,7 +252,8 @@ class BotDatabase {
         return this.data.users[userId] || null;
     }
 
-    createOrUpdateUser(userId, name, phone) {
+    createOrUpdateUser(userId, name, phone, options = {}) {
+        const { skipStats = false } = options;
         const isNew = !this.data.users[userId];
 
         if (isNew) {
@@ -269,8 +272,11 @@ class BotDatabase {
             this.data.users[userId].last_seen = Date.now();
         }
 
-        this.data.users[userId].message_count++;
-        this.data.analytics.totalMessagesProcessed++;
+        if (!skipStats) {
+            this.data.users[userId].message_count++;
+            this.data.analytics.totalMessagesProcessed++;
+        }
+
         this.save();
         return this.data.users[userId];
     }
@@ -680,6 +686,13 @@ class BotDatabase {
 
         this.data.moderationLogs.push(record);
         this.save();
+        if (this.events) {
+            try {
+                this.events.emit('moderationLog', record);
+            } catch (emitError) {
+                logger.error('Failed to emit moderation log event:', emitError);
+            }
+        }
         return record;
     }
 
@@ -773,6 +786,172 @@ class BotDatabase {
             executed_at: Date.now()
         });
         this.save();
+    }
+
+    getCommandUsageSummary({ days = null, limit = 10 } = {}) {
+        const cutoff = days && Number.isFinite(days) && days > 0 ? Date.now() - (days * 24 * 60 * 60 * 1000) : null;
+        const totals = new Map();
+
+        this.data.commandStats.forEach((entry) => {
+            if (cutoff && entry.executed_at < cutoff) {
+                return;
+            }
+            const key = entry.command || 'unknown';
+            totals.set(key, (totals.get(key) || 0) + 1);
+        });
+
+        return Array.from(totals.entries())
+            .map(([command, count]) => ({ command, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, limit);
+    }
+
+    getCommandUsageTrend({ days = 7, top = 5 } = {}) {
+        const limitDays = Number.isFinite(days) && days > 0 ? days : 7;
+        const cutoff = Date.now() - (limitDays * 24 * 60 * 60 * 1000);
+        const topCommands = this.getCommandUsageSummary({ days: limitDays, limit: top }).map((entry) => entry.command);
+        const trendMap = new Map();
+
+        this.data.commandStats.forEach((entry) => {
+            if (entry.executed_at < cutoff) {
+                return;
+            }
+            if (topCommands.length && !topCommands.includes(entry.command)) {
+                return;
+            }
+
+            const dateStr = new Date(entry.executed_at).toISOString().slice(0, 10);
+            if (!trendMap.has(dateStr)) {
+                trendMap.set(dateStr, {});
+            }
+            const bucket = trendMap.get(dateStr);
+            bucket[entry.command] = (bucket[entry.command] || 0) + 1;
+        });
+
+        const sortedDates = Array.from(trendMap.keys()).sort();
+        return sortedDates.map((date) => {
+            const counts = {};
+            topCommands.forEach((command) => {
+                counts[command] = trendMap.get(date)?.[command] || 0;
+            });
+            return { date, counts };
+        });
+    }
+
+    getCommandUsageHeatmap({ days = 7 } = {}) {
+        const limitDays = Number.isFinite(days) && days > 0 ? days : 7;
+        const cutoff = Date.now() - (limitDays * 24 * 60 * 60 * 1000);
+        const heatmap = Array.from({ length: 7 }, (_, day) => ({ day, hours: Array(24).fill(0) }));
+
+        this.data.commandStats.forEach((entry) => {
+            if (entry.executed_at < cutoff) {
+                return;
+            }
+            const date = new Date(entry.executed_at);
+            const dayIndex = date.getDay();
+            const hour = date.getHours();
+            if (Number.isFinite(dayIndex) && Number.isFinite(hour)) {
+                heatmap[dayIndex].hours[hour] += 1;
+            }
+        });
+
+        return heatmap;
+    }
+
+    getCommandUsageByUsers({ limit = 10, days = null } = {}) {
+        const cutoff = days && Number.isFinite(days) && days > 0 ? Date.now() - (days * 24 * 60 * 60 * 1000) : null;
+        const userTotals = new Map();
+
+        this.data.commandStats.forEach((entry) => {
+            if (cutoff && entry.executed_at < cutoff) {
+                return;
+            }
+            const userId = entry.user_id || 'unknown';
+            if (!userTotals.has(userId)) {
+                userTotals.set(userId, { total: 0, commands: new Map() });
+            }
+            const record = userTotals.get(userId);
+            record.total += 1;
+            const cmdKey = entry.command || 'unknown';
+            record.commands.set(cmdKey, (record.commands.get(cmdKey) || 0) + 1);
+        });
+
+        const sorted = Array.from(userTotals.entries())
+            .map(([userId, data]) => {
+                const user = this.data.users[userId] || null;
+                const topCommands = Array.from(data.commands.entries())
+                    .map(([command, count]) => ({ command, count }))
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 5);
+                return {
+                    userId,
+                    name: user?.name || null,
+                    phone: user?.phone || null,
+                    totalCommands: data.total,
+                    topCommands
+                };
+            })
+            .sort((a, b) => b.totalCommands - a.totalCommands)
+            .slice(0, limit);
+
+        return sorted;
+    }
+
+    getCommandUsageByGroups({ limit = 10, days = null } = {}) {
+        const cutoff = days && Number.isFinite(days) && days > 0 ? Date.now() - (days * 24 * 60 * 60 * 1000) : null;
+        const groupTotals = new Map();
+
+        this.data.commandStats.forEach((entry) => {
+            if (cutoff && entry.executed_at < cutoff) {
+                return;
+            }
+            const groupId = entry.group_id || 'direct';
+            if (!groupTotals.has(groupId)) {
+                groupTotals.set(groupId, { total: 0, commands: new Map() });
+            }
+            const record = groupTotals.get(groupId);
+            record.total += 1;
+            const cmdKey = entry.command || 'unknown';
+            record.commands.set(cmdKey, (record.commands.get(cmdKey) || 0) + 1);
+        });
+
+        const sorted = Array.from(groupTotals.entries())
+            .map(([groupId, data]) => {
+                const group = this.data.groups[groupId] || null;
+                const topCommands = Array.from(data.commands.entries())
+                    .map(([command, count]) => ({ command, count }))
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 5);
+                return {
+                    groupId,
+                    name: group?.name || null,
+                    totalCommands: data.total,
+                    topCommands
+                };
+            })
+            .sort((a, b) => b.totalCommands - a.totalCommands)
+            .slice(0, limit);
+
+        return sorted;
+    }
+
+    getCommandUsageRecords({ days = null } = {}) {
+        const cutoff = days && Number.isFinite(days) && days > 0 ? Date.now() - (days * 24 * 60 * 60 * 1000) : null;
+
+        return this.data.commandStats
+            .filter((entry) => !cutoff || entry.executed_at >= cutoff)
+            .map((entry) => {
+                const user = entry.user_id ? this.data.users[entry.user_id] || null : null;
+                const group = entry.group_id ? this.data.groups[entry.group_id] || null : null;
+                return {
+                    command: entry.command,
+                    userId: entry.user_id || null,
+                    userName: user?.name || null,
+                    groupId: entry.group_id || null,
+                    groupName: group?.name || null,
+                    executedAt: entry.executed_at
+                };
+            });
     }
 
     getCommandStats(limit = 10) {

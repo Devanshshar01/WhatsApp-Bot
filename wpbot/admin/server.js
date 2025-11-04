@@ -3,6 +3,7 @@ const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
+const ExcelJS = require('exceljs');
 const helpers = require('../utils/helpers');
 
 /**
@@ -246,6 +247,122 @@ function startAdminServer({
     return res.json({ lines });
   });
 
+  router.get('/analytics/command-summary', requireAuth, (req, res) => {
+    const limitParam = parseInt(req.query.limit, 10);
+    const daysParam = parseInt(req.query.days, 10);
+    const summary = database.getCommandUsageSummary({
+      limit: Number.isFinite(limitParam) ? Math.max(limitParam, 1) : 10,
+      days: Number.isFinite(daysParam) ? Math.max(daysParam, 1) : null,
+    });
+    return res.json({ summary });
+  });
+
+  router.get('/analytics/command-trend', requireAuth, (req, res) => {
+    const daysParam = parseInt(req.query.days, 10);
+    const topParam = parseInt(req.query.top, 10);
+    const trend = database.getCommandUsageTrend({
+      days: Number.isFinite(daysParam) ? Math.max(daysParam, 1) : 7,
+      top: Number.isFinite(topParam) ? Math.max(topParam, 1) : 5,
+    });
+    return res.json({ trend });
+  });
+
+  router.get('/analytics/command-heatmap', requireAuth, (req, res) => {
+    const daysParam = parseInt(req.query.days, 10);
+    const heatmap = database.getCommandUsageHeatmap({
+      days: Number.isFinite(daysParam) ? Math.max(daysParam, 1) : 7,
+    });
+    return res.json({ heatmap });
+  });
+
+  router.get('/analytics/top-users', requireAuth, (req, res) => {
+    const limitParam = parseInt(req.query.limit, 10);
+    const daysParam = parseInt(req.query.days, 10);
+    const users = database.getCommandUsageByUsers({
+      limit: Number.isFinite(limitParam) ? Math.max(limitParam, 1) : 10,
+      days: Number.isFinite(daysParam) ? Math.max(daysParam, 1) : null,
+    });
+    return res.json({ users });
+  });
+
+  router.get('/analytics/top-groups', requireAuth, (req, res) => {
+    const limitParam = parseInt(req.query.limit, 10);
+    const daysParam = parseInt(req.query.days, 10);
+    const groups = database.getCommandUsageByGroups({
+      limit: Number.isFinite(limitParam) ? Math.max(limitParam, 1) : 10,
+      days: Number.isFinite(daysParam) ? Math.max(daysParam, 1) : null,
+    });
+    return res.json({ groups });
+  });
+
+  router.get('/analytics/command-records.csv', requireAuth, (req, res) => {
+    const daysParam = parseInt(req.query.days, 10);
+    const records = database.getCommandUsageRecords({
+      days: Number.isFinite(daysParam) ? Math.max(daysParam, 1) : null,
+    });
+
+    const header = 'Command,User ID,User Name,Group ID,Group Name,Executed At\n';
+    const rows = records.map((record) => {
+      const executed = new Date(record.executedAt).toISOString();
+      return [
+        record.command,
+        record.userId || '',
+        record.userName || '',
+        record.groupId || '',
+        record.groupName || '',
+        executed,
+      ].map((value) => {
+        if (value === null || value === undefined) {
+          return '';
+        }
+        const str = String(value);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+      }).join(',');
+    });
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="command-usage.csv"');
+    res.send(header + rows.join('\n'));
+  });
+
+  router.get('/analytics/command-records.xlsx', requireAuth, async (req, res) => {
+    const daysParam = parseInt(req.query.days, 10);
+    const records = database.getCommandUsageRecords({
+      days: Number.isFinite(daysParam) ? Math.max(daysParam, 1) : null,
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Command Usage');
+    worksheet.columns = [
+      { header: 'Command', key: 'command', width: 20 },
+      { header: 'User ID', key: 'userId', width: 25 },
+      { header: 'User Name', key: 'userName', width: 25 },
+      { header: 'Group ID', key: 'groupId', width: 25 },
+      { header: 'Group Name', key: 'groupName', width: 25 },
+      { header: 'Executed At', key: 'executedAt', width: 25 },
+    ];
+
+    records.forEach((record) => {
+      worksheet.addRow({
+        command: record.command,
+        userId: record.userId || '',
+        userName: record.userName || '',
+        groupId: record.groupId || '',
+        groupName: record.groupName || '',
+        executedAt: new Date(record.executedAt).toISOString(),
+      });
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="command-usage.xlsx"');
+
+    await workbook.xlsx.write(res);
+    res.end();
+  });
+
   router.post('/messages', requireAuth, async (req, res) => {
     const { target, message } = req.body || {};
 
@@ -312,6 +429,33 @@ function startAdminServer({
     const limit = Number.isFinite(limitParam) ? Math.min(Math.max(limitParam, 1), 200) : 50;
     const logs = database.getModerationLogs({ limit });
     return res.json({ logs });
+  });
+
+  router.get('/moderation/stream', requireAuth, (req, res) => {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    });
+
+    const sendEvent = (record) => {
+      try {
+        res.write(`data: ${JSON.stringify(record)}\n\n`);
+      } catch (error) {
+        logger.error('[ADMIN] Failed to write moderation SSE:', error?.message || error);
+      }
+    };
+
+    const heartbeat = setInterval(() => {
+      res.write(': heartbeat\n\n');
+    }, 25000);
+
+    database.events?.on('moderationLog', sendEvent);
+
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      database.events?.off('moderationLog', sendEvent);
+    });
   });
 
   router.post('/moderation/warn', requireAuth, async (req, res) => {
@@ -416,6 +560,41 @@ function startAdminServer({
     } catch (error) {
       logger.error('[ADMIN] Failed to mute user via admin panel:', error);
       return res.status(500).json({ error: 'Failed to mute user' });
+    }
+  });
+
+  router.post('/moderation/kick', requireAuth, async (req, res) => {
+    const { userId, groupId, reason } = req.body || {};
+
+    if (!userId || !groupId) {
+      return res.status(400).json({ error: 'userId and groupId are required' });
+    }
+
+    const client = getClient();
+    if (!client || !runtime.getIsReady()) {
+      return res.status(503).json({ error: 'Bot is not ready' });
+    }
+
+    try {
+      await client.groupRemove(groupId, [userId]);
+      database.addModerationLog('kick', {
+        user_id: userId,
+        group_id: groupId,
+        reason: reason || 'Removed by admin',
+        actor: 'admin:panel',
+      });
+
+      try {
+        const contact = await client.getContactById(userId);
+        logger.info(`[ADMIN] Kicked ${contact?.pushname || userId} from ${groupId}`);
+      } catch (contactError) {
+        logger.warn('[ADMIN] Failed to fetch contact during kick:', contactError?.message || contactError);
+      }
+
+      return res.json({ success: true });
+    } catch (error) {
+      logger.error('[ADMIN] Failed to kick user via admin panel:', error);
+      return res.status(500).json({ error: 'Failed to kick user' });
     }
   });
 
@@ -570,6 +749,123 @@ function startAdminServer({
       logger.error('[ADMIN] Failed to unmute user via admin panel:', error);
       return res.status(500).json({ error: 'Failed to unmute user' });
     }
+  });
+
+  router.post('/moderation/bulk', requireAuth, async (req, res) => {
+    const { action, userIds, groupId, reason, durationMs, durationText, scope = 'group' } = req.body || {};
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ error: 'userIds array is required' });
+    }
+
+    const results = [];
+    const client = getClient();
+    const actor = 'admin:panel';
+
+    const handleWarn = async (userId) => {
+      if (!groupId) {
+        return { userId, success: false, error: 'groupId is required for warn' };
+      }
+      try {
+        const response = database.addWarning(userId, groupId, reason || 'No reason provided', actor);
+        return { userId, success: true, data: response };
+      } catch (error) {
+        logger.error('[ADMIN] Bulk warn failed:', error);
+        return { userId, success: false, error: error?.message || 'Failed to warn' };
+      }
+    };
+
+    const handleMute = async (userId) => {
+      if (!groupId) {
+        return { userId, success: false, error: 'groupId is required for mute' };
+      }
+      try {
+        if (database.getActiveMute(userId, groupId)) {
+          return { userId, success: false, error: 'User already muted' };
+        }
+        const parsedDuration = typeof durationMs === 'number' && Number.isFinite(durationMs)
+          ? Math.max(durationMs, 0)
+          : helpers.parseDuration(durationText || '', 30);
+        const mute = database.addMute(userId, groupId, parsedDuration, reason || 'Muted by admin', actor);
+        return { userId, success: true, data: mute };
+      } catch (error) {
+        logger.error('[ADMIN] Bulk mute failed:', error);
+        return { userId, success: false, error: error?.message || 'Failed to mute' };
+      }
+    };
+
+    const handleKick = async (userId) => {
+      if (!groupId) {
+        return { userId, success: false, error: 'groupId is required for kick' };
+      }
+      if (!client || !runtime.getIsReady()) {
+        return { userId, success: false, error: 'Bot is not ready' };
+      }
+      try {
+        await client.groupRemove(groupId, [userId]);
+        database.addModerationLog('kick', {
+          user_id: userId,
+          group_id: groupId,
+          reason: reason || 'Removed by admin',
+          actor,
+        });
+        return { userId, success: true };
+      } catch (error) {
+        logger.error('[ADMIN] Bulk kick failed:', error);
+        return { userId, success: false, error: error?.message || 'Failed to kick user' };
+      }
+    };
+
+    const handleClear = async (userId) => {
+      try {
+        let result;
+        if (scope === 'all') {
+          result = database.clearAllWarningsForUser(userId);
+        } else {
+          if (!groupId) {
+            return { userId, success: false, error: 'groupId is required for scope=group' };
+          }
+          result = database.clearUserWarnings(userId, groupId);
+        }
+
+        if (!result || result.cleared === 0) {
+          return { userId, success: false, error: 'No warnings found' };
+        }
+
+        database.addModerationLog('unwarn', {
+          user_id: userId,
+          group_id: scope === 'all' ? null : groupId,
+          reason: reason || 'Warnings cleared by admin',
+          actor,
+          cleared: result.cleared,
+        });
+
+        return { userId, success: true, data: result };
+      } catch (error) {
+        logger.error('[ADMIN] Bulk clear warnings failed:', error);
+        return { userId, success: false, error: error?.message || 'Failed to clear warnings' };
+      }
+    };
+
+    const handlers = {
+      warn: handleWarn,
+      mute: handleMute,
+      kick: handleKick,
+      clear: handleClear,
+    };
+
+    const handler = handlers[action];
+    if (!handler) {
+      return res.status(400).json({ error: 'Unsupported bulk action' });
+    }
+
+    for (const userId of userIds) {
+      // eslint-disable-next-line no-await-in-loop
+      const result = await handler(userId);
+      results.push(result);
+    }
+
+    return res.json({ success: true, results });
   });
 
   router.delete('/moderation/cases/:caseId', requireAuth, (req, res) => {
