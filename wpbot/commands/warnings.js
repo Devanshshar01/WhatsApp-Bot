@@ -7,6 +7,7 @@ module.exports = {
     aliases: ['warns'],
     description: 'Display warning and mute history for a user in this group.',
     usage: '/warnings @user',
+    category: 'moderation',
     groupOnly: true,
     adminOnly: true,
     cooldown: 5000,

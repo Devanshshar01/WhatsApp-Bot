@@ -1,2 +1,39 @@
+# Dependencies
 node_modules/
+
+# Environment files
 .env
+.env.local
+.env.*.local
+
+# WhatsApp session data
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Database files
+database/*.db
+database/*.json
+
+# Media files (keep directories, ignore contents)
+media/downloads/*
+media/temp/*
+media/stickers/*
+!media/*/.gitkeep
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build output
+dist/
+build/

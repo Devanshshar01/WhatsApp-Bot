@@ -5,6 +5,7 @@ module.exports = {
     aliases: ['ban'],
     description: 'Block user from using bot',
     usage: '/block <@mention or reply>',
+    category: 'owner',
     ownerOnly: true,
     cooldown: 5000,
     

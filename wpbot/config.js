@@ -27,6 +27,9 @@ module.exports = {
     commandCooldown: parseInt(process.env.COMMAND_COOLDOWN) || 3000,
     maxMessagesPerMinute: parseInt(process.env.MAX_MESSAGES_PER_MINUTE) || 10,
     
+    // Regional Settings
+    defaultCountryCode: process.env.DEFAULT_COUNTRY_CODE || '1', // Default to US (+1)
+    
     // Media
     mediaFolder: process.env.MEDIA_FOLDER || './media',
     maxMediaSize: parseInt(process.env.MAX_MEDIA_SIZE) || 16777216, // 16MB
@@ -34,6 +37,7 @@ module.exports = {
     // Logging
     logLevel: process.env.LOG_LEVEL || 'info',
     enableMessageLogging: process.env.ENABLE_MESSAGE_LOGGING === 'true',
+    debugMode: process.env.DEBUG_MODE === 'true',
 
     // Admin Panel
     admin: {

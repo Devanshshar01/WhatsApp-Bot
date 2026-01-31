@@ -5,21 +5,27 @@ const cooldown = require('../utils/cooldown');
 const database = require('../database/database');
 const commandHandler = require('../utils/commandHandler');
 
+// Track muted user message queue for batch deletion
+const mutedMessageQueue = new Map(); // groupId -> Map(userId -> { messages: [], timer: null })
+const BATCH_DELETE_DELAY = 500; // ms to wait before batch deleting
+
 class MessageHandler {
     /**
      * Handle incoming messages
      */
     async handle(client, message) {
         try {
-            // Add detailed logging for debugging
-            console.log('[DEBUG] Message received:', {
-                from: message.from,
-                author: message.author,
-                body: message.body,
-                type: message.type,
-                isForwarded: message.isForwarded,
-                timestamp: new Date().toISOString()
-            });
+            // Debug logging (gated behind DEBUG_MODE)
+            if (config.debugMode) {
+                console.log('[DEBUG] Message received:', {
+                    from: message.from,
+                    author: message.author,
+                    body: message.body,
+                    type: message.type,
+                    isForwarded: message.isForwarded,
+                    timestamp: new Date().toISOString()
+                });
+            }
 
             // Ignore if message is from status broadcast
             if (message.from === 'status@broadcast') return;
@@ -34,17 +40,19 @@ class MessageHandler {
             const userName = contact.pushname || contact.name || 'Unknown';
             const userNumber = contact.number || userId.split('@')[0];
             
-            console.log('[DEBUG] Contact info:', {
-                userId,
-                userName,
-                userNumber
-            });
+            if (config.debugMode) {
+                console.log('[DEBUG] Contact info:', {
+                    userId,
+                    userName,
+                    userNumber
+                });
+            }
 
             database.createOrUpdateUser(userId, userName, userNumber);
 
             // Check if user is blocked
             if (database.isUserBlocked(userId)) {
-                console.log('[DEBUG] User is blocked:', userId);
+                if (config.debugMode) console.log('[DEBUG] User is blocked:', userId);
                 return;
             }
 
@@ -58,8 +66,10 @@ class MessageHandler {
 
             // Get message body
             const body = message.body || '';
-            console.log('[DEBUG] Message body:', body);
-            console.log('[DEBUG] Prefix check:', body.startsWith(config.prefix), 'Prefix:', config.prefix);
+            if (config.debugMode) {
+                console.log('[DEBUG] Message body:', body);
+                console.log('[DEBUG] Prefix check:', body.startsWith(config.prefix), 'Prefix:', config.prefix);
+            }
 
             if (message.from.endsWith('@g.us')) {
                 const muteHandled = await this.handleMuteEnforcement(client, message, contact);
@@ -76,7 +86,7 @@ class MessageHandler {
             // Check for commands
             if (body.startsWith(config.prefix)) {
                 logger.info(`Command detected from ${userId}: ${body}`);
-                console.log('[DEBUG] Processing command:', body);
+                if (config.debugMode) console.log('[DEBUG] Processing command:', body);
                 await this.handleCommand(client, message, body);
                 return;
             }
@@ -220,16 +230,15 @@ class MessageHandler {
         }
 
         const isBotAdmin = await helpers.isBotGroupAdmin(message);
+        
         if (isBotAdmin) {
-            try {
-                await message.delete(true);
-            } catch (error) {
-                logger.error('Error deleting message from muted user:', error);
-            }
+            // Use batch deletion to handle spam better
+            await this.queueMessageForDeletion(groupId, userId, message);
         } else {
             logger.warn('Bot lacks admin permissions to delete muted messages in group:', groupId);
         }
 
+        // Notification with 60-second cooldown
         const now = Date.now();
         const shouldNotify = !activeMute.last_notified_at || (now - activeMute.last_notified_at) > 60000;
 
@@ -259,6 +268,54 @@ class MessageHandler {
         }
 
         return true;
+    }
+
+    /**
+     * Queue muted user messages for batch deletion to handle spam efficiently
+     */
+    async queueMessageForDeletion(groupId, userId, message) {
+        if (!mutedMessageQueue.has(groupId)) {
+            mutedMessageQueue.set(groupId, new Map());
+        }
+        
+        const groupQueue = mutedMessageQueue.get(groupId);
+        
+        if (!groupQueue.has(userId)) {
+            groupQueue.set(userId, { messages: [], timer: null });
+        }
+        
+        const userQueue = groupQueue.get(userId);
+        userQueue.messages.push(message);
+        
+        // Clear existing timer and set new one
+        if (userQueue.timer) {
+            clearTimeout(userQueue.timer);
+        }
+        
+        // Batch delete after short delay (catches rapid spam)
+        userQueue.timer = setTimeout(async () => {
+            const messagesToDelete = [...userQueue.messages];
+            userQueue.messages = [];
+            userQueue.timer = null;
+            
+            // Delete all queued messages in parallel
+            const deletePromises = messagesToDelete.map(async (msg) => {
+                try {
+                    await msg.delete(true);
+                } catch (error) {
+                    // Message may already be deleted or too old
+                    if (!error.message?.includes('not found')) {
+                        logger.error('Error deleting muted message:', error.message);
+                    }
+                }
+            });
+            
+            await Promise.allSettled(deletePromises);
+            
+            if (messagesToDelete.length > 1) {
+                logger.info(`Batch deleted ${messagesToDelete.length} messages from muted user ${userId} in ${groupId}`);
+            }
+        }, BATCH_DELETE_DELAY);
     }
 }
 

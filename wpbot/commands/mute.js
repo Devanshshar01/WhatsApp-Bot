@@ -39,6 +39,7 @@ module.exports = {
     aliases: ['tempmute'],
     description: 'Mute a user in the group for a duration (default 30 minutes).',
     usage: '/mute @user <duration> <reason>\nExamples:\n/mute @user 30m Spamming\n/mute @user 2h Breaking rules\n/mute @user perm Severe violation',
+    category: 'moderation',
     groupOnly: true,
     adminOnly: true,
     cooldown: 5000,

@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
 const ExcelJS = require('exceljs');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const helpers = require('../utils/helpers');
 
 /**
@@ -30,8 +32,24 @@ function startAdminServer({
   getClient,
 }) {
   const app = express();
-  app.use(express.json());
+  app.use(express.json({ limit: '1mb' })); // Limit request body size
   app.use(cookieParser());
+
+  // CORS configuration - allow all origins for personal/dev use
+  app.use(cors({
+    origin: true, // Allow all origins
+    credentials: true, // Allow cookies
+  }));
+
+  // Rate limiting - 100 requests per 15 minutes per IP
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100,
+    message: { error: 'Too many requests, please try again later' },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use('/admin/api', apiLimiter);
 
   const { admin } = config;
   const cookieName = admin.jwtCookieName;
@@ -87,6 +105,23 @@ function startAdminServer({
       clearSessionCookie(res);
       return res.status(401).json({ error: 'Unauthorized' });
     }
+  }
+
+  // Input validation limits
+  const MAX_REASON_LENGTH = 500;
+  const MAX_MESSAGE_LENGTH = 4096;
+  const MAX_BULK_USERS = 50;
+  const MAX_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days max
+
+  /**
+   * Validate and truncate string input
+   */
+  function validateString(value, maxLength, fieldName) {
+    if (value === undefined || value === null) return null;
+    if (typeof value !== 'string') {
+      throw new Error(`${fieldName} must be a string`);
+    }
+    return value.slice(0, maxLength);
   }
 
   const router = express.Router();
@@ -370,6 +405,14 @@ function startAdminServer({
       return res.status(400).json({ error: 'Target and message are required' });
     }
 
+    // Validate input lengths
+    if (target.length > 100) {
+      return res.status(400).json({ error: 'Target is too long' });
+    }
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      return res.status(400).json({ error: `Message exceeds ${MAX_MESSAGE_LENGTH} characters` });
+    }
+
     const client = getClient();
     if (!client || !runtime.getIsReady()) {
       return res.status(503).json({ error: 'Bot is not ready' });
@@ -465,9 +508,12 @@ function startAdminServer({
       return res.status(400).json({ error: 'userId and groupId are required' });
     }
 
+    // Validate reason length
+    const validatedReason = validateString(reason, MAX_REASON_LENGTH, 'reason') || 'No reason provided';
+
     try {
       const actor = 'admin:panel';
-      const result = database.addWarning(userId, groupId, reason || 'No reason provided', actor);
+      const result = database.addWarning(userId, groupId, validatedReason, actor);
 
       const response = {
         success: true,
@@ -518,6 +564,9 @@ function startAdminServer({
       return res.status(400).json({ error: 'userId and groupId are required' });
     }
 
+    // Validate reason length
+    const validatedReason = validateString(reason, MAX_REASON_LENGTH, 'reason') || 'Muted by admin';
+
     const client = getClient();
     const actor = 'admin:panel';
 
@@ -527,14 +576,14 @@ function startAdminServer({
       }
 
       const parsedDurationMs = typeof durationMs === 'number' && Number.isFinite(durationMs)
-        ? Math.max(durationMs, 0)
-        : helpers.parseDuration(durationText || '', 30);
+        ? Math.min(Math.max(durationMs, 0), MAX_DURATION_MS)
+        : Math.min(helpers.parseDuration(durationText || '', 30), MAX_DURATION_MS);
 
       const mute = database.addMute(
         userId,
         groupId,
         parsedDurationMs,
-        reason || 'Muted by admin',
+        validatedReason,
         actor
       );
 
@@ -758,6 +807,14 @@ function startAdminServer({
       return res.status(400).json({ error: 'userIds array is required' });
     }
 
+    // Limit bulk operations to prevent abuse
+    if (userIds.length > MAX_BULK_USERS) {
+      return res.status(400).json({ error: `Cannot process more than ${MAX_BULK_USERS} users at once` });
+    }
+
+    // Validate reason length
+    const validatedReason = validateString(reason, MAX_REASON_LENGTH, 'reason') || 'No reason provided';
+
     const results = [];
     const client = getClient();
     const actor = 'admin:panel';
@@ -767,7 +824,7 @@ function startAdminServer({
         return { userId, success: false, error: 'groupId is required for warn' };
       }
       try {
-        const response = database.addWarning(userId, groupId, reason || 'No reason provided', actor);
+        const response = database.addWarning(userId, groupId, validatedReason, actor);
         return { userId, success: true, data: response };
       } catch (error) {
         logger.error('[ADMIN] Bulk warn failed:', error);
@@ -784,9 +841,9 @@ function startAdminServer({
           return { userId, success: false, error: 'User already muted' };
         }
         const parsedDuration = typeof durationMs === 'number' && Number.isFinite(durationMs)
-          ? Math.max(durationMs, 0)
-          : helpers.parseDuration(durationText || '', 30);
-        const mute = database.addMute(userId, groupId, parsedDuration, reason || 'Muted by admin', actor);
+          ? Math.min(Math.max(durationMs, 0), MAX_DURATION_MS)
+          : Math.min(helpers.parseDuration(durationText || '', 30), MAX_DURATION_MS);
+        const mute = database.addMute(userId, groupId, parsedDuration, validatedReason, actor);
         return { userId, success: true, data: mute };
       } catch (error) {
         logger.error('[ADMIN] Bulk mute failed:', error);
@@ -806,7 +863,7 @@ function startAdminServer({
         database.addModerationLog('kick', {
           user_id: userId,
           group_id: groupId,
-          reason: reason || 'Removed by admin',
+          reason: validatedReason,
           actor,
         });
         return { userId, success: true };

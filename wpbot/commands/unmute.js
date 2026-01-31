@@ -6,6 +6,7 @@ module.exports = {
     name: 'unmute',
     description: 'Lift an active mute from a user in the group.',
     usage: '/unmute @user [reason]',
+    category: 'moderation',
     groupOnly: true,
     adminOnly: true,
     cooldown: 5000,

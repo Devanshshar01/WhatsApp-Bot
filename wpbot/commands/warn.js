@@ -6,6 +6,7 @@ module.exports = {
     name: 'warn',
     description: 'Issue a warning to a user in the group.',
     usage: '/warn @user <reason>',
+    category: 'moderation',
     groupOnly: true,
     adminOnly: true,
     cooldown: 5000,

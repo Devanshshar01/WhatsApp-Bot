@@ -3,6 +3,7 @@ module.exports = {
     aliases: ['exit'],
     description: 'Make bot leave the group',
     usage: '/leave',
+    category: 'owner',
     groupOnly: true,
     ownerOnly: true,
     cooldown: 5000,
@@ -10,11 +11,6 @@ module.exports = {
     async execute(client, message, args) {
         try {
             const chat = await message.getChat();
-            
-            if (!chat.isGroup) {
-                await message.reply('❌ This command can only be used in groups.');
-                return;
-            }
 
             await message.reply('👋 Goodbye! Leaving the group...');
             

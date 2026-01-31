@@ -16,7 +16,19 @@ module.exports = {
             }
 
             const word = args[0].toLowerCase();
-            
+
+            // Validate word length (dictionary words are typically short)
+            if (word.length > 50) {
+                await message.reply('❌ Word too long. Please enter a valid word.');
+                return;
+            }
+
+            // Validate word format (letters only)
+            if (!/^[a-z]+$/i.test(word)) {
+                await message.reply('❌ Please enter a valid English word (letters only).');
+                return;
+            }
+
             // Using Free Dictionary API
             const url = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`;
             

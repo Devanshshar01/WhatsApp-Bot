@@ -1,3 +1,16 @@
+const { Parser } = require('expr-eval');
+
+// Create a safe math parser instance
+const parser = new Parser({
+    operators: {
+        // Enable safe math operators only
+        add: true, subtract: true, multiply: true, divide: true,
+        power: true, factorial: true, remainder: true,
+        // Disable potentially dangerous operators
+        logical: false, comparison: false, 'in': false, assignment: false
+    }
+});
+
 module.exports = {
     name: 'calc',
     aliases: ['calculate', 'math'],
@@ -31,29 +44,18 @@ module.exports = {
                 return;
             }
 
-            let expression = args.join(' ');
+            const expression = args.join(' ');
             
-            // Basic sanitization
-            expression = expression.replace(/[^0-9+\-*/().\s^%]/g, '');
-            expression = expression.replace(/\^/g, '**');
+            // Limit expression length to prevent abuse
+            if (expression.length > 200) {
+                await message.reply('❌ Expression too long. Maximum 200 characters.');
+                return;
+            }
             
-            // Add support for common functions
-            expression = expression.replace(/sqrt\(/g, 'Math.sqrt(');
-            expression = expression.replace(/abs\(/g, 'Math.abs(');
-            expression = expression.replace(/sin\(/g, 'Math.sin(');
-            expression = expression.replace(/cos\(/g, 'Math.cos(');
-            expression = expression.replace(/tan\(/g, 'Math.tan(');
-            expression = expression.replace(/log\(/g, 'Math.log(');
-            expression = expression.replace(/pi/gi, 'Math.PI');
-            
-            // Evaluate expression safely
+            // Evaluate expression safely using expr-eval
             let result;
             try {
-                // Create a safe evaluation context
-                const safeEval = (expr) => {
-                    return Function('"use strict"; return (' + expr + ')')();
-                };
-                result = safeEval(expression);
+                result = parser.evaluate(expression);
             } catch (evalError) {
                 await message.reply('❌ Invalid mathematical expression');
                 return;

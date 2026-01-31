@@ -58,8 +58,17 @@ module.exports = {
                     const stickerMedia = new MessageMedia('image/webp', resizedBuffer.toString('base64'));
                     await client.sendMessage(message.from, stickerMedia, { sendMediaAsSticker: true });
                 }
-                // For videos (short clips only)
+                // For videos (short clips only - max ~6-10 seconds recommended)
                 else if (media.mimetype.startsWith('video/')) {
+                    // Check video size - WhatsApp animated stickers have limits
+                    const videoBuffer = Buffer.from(media.data, 'base64');
+                    const videoSizeMB = videoBuffer.length / (1024 * 1024);
+                    
+                    if (videoSizeMB > 3) {
+                        await message.reply('❌ Video too large for sticker (max ~3MB). Try a shorter video clip (6-10 seconds recommended).');
+                        return;
+                    }
+                    
                     // Send as animated sticker
                     await client.sendMessage(message.from, media, { sendMediaAsSticker: true });
                 }

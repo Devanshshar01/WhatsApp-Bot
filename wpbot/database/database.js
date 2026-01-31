@@ -15,6 +15,7 @@ class BotDatabase {
             mutes: [],
             moderationLogs: [],
             commandStats: [],
+            reminders: [],
             settings: {
                 features: {},
                 commandToggles: {}
@@ -23,7 +24,8 @@ class BotDatabase {
                 totalMessagesProcessed: 0
             },
             counters: {
-                nextCase: 1
+                nextCase: 1,
+                nextReminder: 1
             }
         };
         this.events = new EventEmitter();
@@ -522,8 +524,13 @@ class BotDatabase {
             record = existing;
         } else {
             const caseId = this._nextCaseId();
+            // Use counter for mute ID instead of array length to prevent collision
+            this.data.counters = this.data.counters || { nextMute: 1 };
+            if (!this.data.counters.nextMute) {
+                this.data.counters.nextMute = this.data.mutes.length + 1;
+            }
             record = {
-                id: this.data.mutes.length + 1,
+                id: this.data.counters.nextMute++,
                 user_id: userId,
                 group_id: groupId,
                 reason,
@@ -1017,6 +1024,57 @@ class BotDatabase {
             totalUsers: this.getUserCount(),
             totalGroups: this.getGroupCount()
         };
+    }
+
+    /**
+     * Reminder persistence
+     */
+    addReminder(userId, chatId, message, triggerTime, durationMs) {
+        this.data.counters = this.data.counters || { nextReminder: 1 };
+        const reminderId = this.data.counters.nextReminder++;
+        
+        const reminder = {
+            id: reminderId,
+            userId,
+            chatId,
+            message,
+            triggerTime,
+            durationMs,
+            createdAt: Date.now()
+        };
+        
+        this.data.reminders = this.data.reminders || [];
+        this.data.reminders.push(reminder);
+        this.save();
+        
+        return reminder;
+    }
+
+    getActiveReminders() {
+        this.data.reminders = this.data.reminders || [];
+        const now = Date.now();
+        return this.data.reminders.filter(r => r.triggerTime > now);
+    }
+
+    removeReminder(reminderId) {
+        this.data.reminders = this.data.reminders || [];
+        const index = this.data.reminders.findIndex(r => r.id === reminderId);
+        if (index !== -1) {
+            this.data.reminders.splice(index, 1);
+            this.save();
+            return true;
+        }
+        return false;
+    }
+
+    cleanupExpiredReminders() {
+        this.data.reminders = this.data.reminders || [];
+        const now = Date.now();
+        const before = this.data.reminders.length;
+        this.data.reminders = this.data.reminders.filter(r => r.triggerTime > now);
+        if (this.data.reminders.length !== before) {
+            this.save();
+        }
     }
 
     /**

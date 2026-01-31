@@ -7,6 +7,7 @@ module.exports = {
     aliases: ['clearwarns', 'delwarns'],
     description: 'Remove warnings issued to a user (group-only, admin/owner).',
     usage: '/unwarn @user [--all | groupId] [reason]',
+    category: 'moderation',
     groupOnly: true,
     adminOnly: true,
     cooldown: 5000,

@@ -5,6 +5,7 @@ module.exports = {
     aliases: ['unban'],
     description: 'Unblock user from using bot',
     usage: '/unblock <@mention or reply>',
+    category: 'owner',
     ownerOnly: true,
     cooldown: 5000,
     

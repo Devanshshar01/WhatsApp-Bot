@@ -1,10 +1,12 @@
 const helpers = require('../utils/helpers');
+const config = require('../config');
 
 module.exports = {
     name: 'add',
     aliases: ['invite'],
     description: 'Add member to group',
     usage: '/add <number>',
+    category: 'group',
     groupOnly: true,
     adminOnly: true,
     cooldown: 5000,
@@ -33,9 +35,10 @@ module.exports = {
             // Get phone number
             let phoneNumber = args[0].replace(/[^0-9]/g, '');
             
-            // Add country code if not present
-            if (!phoneNumber.startsWith('91') && phoneNumber.length === 10) {
-                phoneNumber = '91' + phoneNumber; // Default to India, change as needed
+            // Add country code if not present (use configured default)
+            const countryCode = config.defaultCountryCode || '1';
+            if (!phoneNumber.startsWith(countryCode) && phoneNumber.length === 10) {
+                phoneNumber = countryCode + phoneNumber;
             }
 
             const numberId = `${phoneNumber}@c.us`;

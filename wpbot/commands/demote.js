@@ -5,6 +5,7 @@ module.exports = {
     aliases: ['unadmin'],
     description: 'Demote admin to member',
     usage: '/demote <@mention or reply>',
+    category: 'group',
     groupOnly: true,
     adminOnly: true,
     cooldown: 5000,
@@ -12,11 +13,6 @@ module.exports = {
     async execute(client, message, args) {
         try {
             const chat = await message.getChat();
-            
-            if (!chat.isGroup) {
-                await message.reply('❌ This command can only be used in groups.');
-                return;
-            }
 
             // Check if bot is admin
             const isBotAdmin = await helpers.isBotGroupAdmin(message);

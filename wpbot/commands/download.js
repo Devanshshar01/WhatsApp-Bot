@@ -57,7 +57,6 @@ module.exports = {
             let response = `✅ *Media Downloaded Successfully!*\n\n`;
             response += `📁 *Filename:* ${filename}\n`;
             response += `📊 *Size:* ${fileSizeMB} MB\n`;
-            response += `📂 *Location:* ${downloadPath}\n`;
             response += `🎯 *Type:* ${media.mimetype}`;
 
             await message.reply(response);

@@ -1,6 +1,7 @@
 const config = require('../config');
 const logger = require('../utils/logger');
 const database = require('../database/database');
+const helpers = require('../utils/helpers');
 
 class GroupHandler {
     /**
@@ -8,15 +9,40 @@ class GroupHandler {
      */
     async handleJoin(client, notification) {
         try {
-            if (!config.groupAutomations?.welcomeMessages) {
-                return;
-            }
-
             const chat = await notification.getChat();
             const groupId = notification.chatId;
             
             // Ensure group exists in database
             database.createOrUpdateGroup(groupId, chat.name, chat.description || '');
+            
+            // Check for mute evasion (user rejoining while muted)
+            for (const userId of notification.recipientIds) {
+                const activeMute = database.getActiveMute(userId, groupId);
+                if (activeMute) {
+                    logger.warn(`[MUTE EVASION] User ${userId} rejoined group ${groupId} while muted`);
+                    
+                    // Notify admins about mute evasion
+                    try {
+                        const contact = await client.getContactById(userId);
+                        const remaining = activeMute.expires_at ? Math.max(activeMute.expires_at - Date.now(), 0) : null;
+                        const durationText = remaining ? helpers.formatDuration(remaining) : 'permanently';
+                        
+                        await chat.sendMessage(
+                            `⚠️ *Mute Evasion Detected*\n\n` +
+                            `@${contact.number} rejoined while still muted (${durationText} remaining).\n` +
+                            `Their messages will continue to be deleted.`,
+                            { mentions: [contact] }
+                        );
+                    } catch (notifyError) {
+                        logger.error('Error notifying about mute evasion:', notifyError.message);
+                    }
+                    continue; // Skip welcome message for muted users
+                }
+            }
+            
+            if (!config.groupAutomations?.welcomeMessages) {
+                return;
+            }
             
             const group = database.getGroup(groupId);
             

@@ -37,6 +37,12 @@ module.exports = {
             const targetLang = args[0].toLowerCase();
             const textToTranslate = args.slice(1).join(' ');
 
+            // Validate input length
+            if (textToTranslate.length > 2000) {
+                await message.reply('❌ Text too long. Maximum 2000 characters for translation.');
+                return;
+            }
+
             // Using Google Translate API (free tier)
             const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(textToTranslate)}`;
             

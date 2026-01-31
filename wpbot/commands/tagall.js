@@ -1,10 +1,13 @@
 const helpers = require('../utils/helpers');
 
+const MAX_TAGALL_MEMBERS = 256; // WhatsApp has limits on mentions
+
 module.exports = {
     name: 'tagall',
     aliases: ['everyone', 'all'],
     description: 'Tag all group members',
     usage: '/tagall [message]',
+    category: 'group',
     groupOnly: true,
     adminOnly: true,
     cooldown: 10000,
@@ -12,11 +15,6 @@ module.exports = {
     async execute(client, message, args) {
         try {
             const chat = await message.getChat();
-            
-            if (!chat.isGroup) {
-                await message.reply('❌ This command can only be used in groups.');
-                return;
-            }
 
             // Get all participants
             const participants = chat.participants;
@@ -26,8 +24,19 @@ module.exports = {
                 return;
             }
 
-            // Prepare message
+            // Check if group is too large
+            if (participants.length > MAX_TAGALL_MEMBERS) {
+                await message.reply(`❌ This group has ${participants.length} members. Tagall is limited to groups with ${MAX_TAGALL_MEMBERS} or fewer members to prevent spam issues.`);
+                return;
+            }
+
+            // Validate custom message length
             const customMessage = args.join(' ') || 'Attention everyone!';
+            if (customMessage.length > 1000) {
+                await message.reply('❌ Message too long. Maximum 1000 characters.');
+                return;
+            }
+            
             let text = `📢 *Group Announcement*\n\n${customMessage}\n\n`;
             
             // Create mentions array

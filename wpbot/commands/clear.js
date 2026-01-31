@@ -8,6 +8,7 @@ module.exports = {
     name: 'clear',
     description: 'Delete a specific moderation record by case ID.',
     usage: '/clear @user CASE-00001',
+    category: 'moderation',
     groupOnly: true,
     adminOnly: true,
     cooldown: 5000,

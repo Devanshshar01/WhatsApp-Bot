@@ -1,10 +1,12 @@
 const helpers = require('../utils/helpers');
+const config = require('../config');
 
 module.exports = {
     name: 'remove',
     aliases: ['kick'],
     description: 'Remove member from group',
     usage: '/remove <@mention or reply>',
+    category: 'group',
     groupOnly: true,
     adminOnly: true,
     cooldown: 5000,
@@ -39,8 +41,9 @@ module.exports = {
             // Check for phone number in args
             else if (args.length > 0) {
                 let phoneNumber = args[0].replace(/[^0-9]/g, '');
-                if (!phoneNumber.startsWith('91') && phoneNumber.length === 10) {
-                    phoneNumber = '91' + phoneNumber;
+                const countryCode = config.defaultCountryCode || '1';
+                if (!phoneNumber.startsWith(countryCode) && phoneNumber.length === 10) {
+                    phoneNumber = countryCode + phoneNumber;
                 }
                 targetUser = `${phoneNumber}@c.us`;
             }

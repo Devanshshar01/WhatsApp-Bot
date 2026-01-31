@@ -1,55 +1,40 @@
-# 🤖 WhatsApp Automation Suite
+# 🤖 Advanced WhatsApp Bot
 
-A production-ready WhatsApp bot powered by [Node.js](https://nodejs.org/) and [whatsapp-web.js](https://github.com/pedroslopez/whatsapp-web.js). It includes a modern command framework, group moderation tools, webhook integrations, and deployment guides so you can ship reliable automation fast.
-
----
-
-## 📚 Table of Contents
-1. [Features](#-features)
-2. [Project Structure](#-project-structure)
-3. [Getting Started](#-getting-started)
-4. [Configuration](#-configuration)
-5. [Usage](#-usage)
-6. [Deployment](#-deployment)
-7. [Security](#-security)
-8. [Troubleshooting](#-troubleshooting)
-9. [Contributing](#-contributing)
-10. [License](#-license)
+A powerful, feature-rich WhatsApp automation bot built with **Node.js** and **whatsapp-web.js**. This bot is designed for groups and personal use, offering comprehensive moderation, utility tools, media handling, and a full-stack **Admin Dashboard**.
 
 ---
 
 ## ✨ Features
 
-- **Comprehensive Command System**: Cooldowns, aliases, owner/admin gating, and user blocking.
-- **Group Management**: Welcome/goodbye messages, anti-link and anti-spam filters, promotions/demotions, and a warning system.
-- **Media Utilities**: Sticker conversion, media downloads, QR code generation, and URL shortening.
-- **Utility Arsenal**: Translation, weather, reminders, polls, calculator, timer, dictionary, and currency conversion.
-- **Fun Interactions**: Compliments, roasts, and a collection of flirty pickup lines.
-- **Express Webhook Server**: Exposes `/health` and `/send` endpoints for integrations.
-- **JSON-Backed Persistence**: `database/bot.json` for storing users, groups, warnings, and command metrics.
-- **Admin Panel**: A React-based admin panel for live metrics, user/group management, command toggles, and a log viewer.
+### 🛡️ Moderation & Safety
+*   **Kick/Ban/Mute**: Powerful commands to manage unruly users (`/kick`, `/ban`, `/mute`).
+*   **Anti-Spam**: Intelligent rate limiting and spam detection.
+*   **Anti-Link**: Automatically delete links from non-admins.
+*   **Profanity Filter**: Keep your chat clean.
+*   **Log System**: Detailed event logging.
+*   **Mute Info**: Check mute status and expiry (`/muteinfo`).
 
----
+### 👥 Group Management
+*   **Tag All**: Mention everyone in the group with one command.
+*   **Welcome/Goodbye**: Customizable automated messages for join/leave events.
+*   **Promote/Demote**: Manage group admins easily.
+*   **Group Info**: Get detailed statistics about the group.
 
-## 🏗️ Project Structure
+### 🛠️ Utilities
+*   **AI Tools**: Translate text, Define words.
+*   **Math**: Advanced calculator (powered by `expr-eval`).
+*   **Reminders**: Set persistent reminders (`/remind 10m check oven`).
+*   **Weather**: Real-time weather updates.
+*   **Conversion**: Currency, Polls, and more.
 
-```
-wpbot/
-├── admin/                 # Admin panel server
-├── admin-panel/           # React-based admin panel
-├── commands/              # Modular command implementations
-├── database/              # Database files
-│   └── database.js        # Persistence helper
-├── events/                # Message and group event handlers
-├── utils/                 # Helper functions, logger, cooldown, and command loader
-├── media/                 # Downloaded media, temporary files, and generated stickers
-├── logs/                  # Rotating logs
-├── .env.example           # Example environment file
-├── bot-server.js          # WhatsApp client and Express bootstrap
-├── config.js              # Project configuration
-├── index.js               # Main entry point
-└── README.md              # This file
-```
+### 🎬 Media
+*   **Stickers**: Convert Images/Videos to stickers instantly (`/sticker`).
+*   **Download**: Download 'View Once' media and status updates (`/download`).
+
+### 📊 Admin Dashboard
+*   A modern **web interface** to manage your bot (located in `admin-panel/`).
+*   View logs, manage users, and configure settings visually.
+*   Real-time analytics.
 
 ---
 
@@ -57,145 +42,156 @@ wpbot/
 
 ### Prerequisites
 
-- Node.js 18+
-- npm
-- Git (optional)
-- A dedicated WhatsApp account
+*   **Node.js** (v18 or higher recommended)
+*   **Git**
+*   **WhatsApp Account** (on a phone)
 
-### Installation
+### 📥 Installation
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/<your-username>/WhatsApp-Bot.git
-   cd WhatsApp-Bot/wpbot
-   ```
+1.  **Clone the repository**
+    ```bash
+    git clone https://github.com/yourusername/whatsapp-bot.git
+    cd whatsapp-bot/wpbot
+    ```
 
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+2.  **Install Dependencies**
+    ```bash
+    npm install
+    npm install expr-eval  # Required for calculator
+    ```
 
-3. **Configure your environment:**
-   - Copy the example environment file:
-     ```bash
-     cp .env.example .env
-     ```
-   - Open the `.env` file and fill in the required variables, such as `BOT_NAME`, `PREFIX`, and `OWNER_NUMBERS`.
-
-4. **Start the bot:**
-   ```bash
-   npm start
-   ```
-
-5. **Scan the QR Code:**
-   - A QR code will appear in your terminal.
-   - Open WhatsApp on your phone, go to **Settings > Linked Devices > Link a Device**, and scan the QR code.
-
-Once the client is ready, you can start interacting with the bot from any WhatsApp account other than the one you used to scan the QR code.
+3.  **Configuration**
+    *   Rename `.env.example` to `.env`.
+    *   Open `.env` and configure your settings:
+        ```env
+        PREFIX=/
+        OWNER_NUMBERS=1234567890
+        DEFAULT_COUNTRY_CODE=1
+        DEBUG_MODE=false
+        ```
 
 ---
 
-## 🔧 Configuration
+## 🖥️ Running the Bot
 
-The bot can be configured through the `.env` file. Here are some of the most important variables:
+1.  **Start the Bot**
+    ```bash
+    npm start
+    ```
+    *First run will generate a QR Code in the terminal.*
 
-| Variable | Description |
-|----------|-------------|
-| `BOT_NAME` | The display name of the bot in responses and help panels. |
-| `PREFIX` | The command prefix (default is `/`). |
-| `OWNER_NUMBERS` | A comma-separated list of international numbers with owner privileges. |
-| `DATABASE_PATH` | The path to the JSON database file (defaults to `database/bot.json`). |
-| `ENABLE_AUTO_RESPONSE` | A feature flag to enable or disable auto-responses. |
-| `ENABLE_ANTI_SPAM` | A feature flag to enable or disable the anti-spam filter. |
-| `ENABLE_ANTI_LINK` | A feature flag to enable or disable the anti-link filter. |
+2.  **Authenticate**
+    *   Open WhatsApp on your phone.
+    *   Go to **Linked Devices** > **Link a Device**.
+    *   Scan the QR code shown in your terminal.
 
----
-
-## 🧰 Command Catalogue
-
-### Basic
-- `/help [command]` – detailed documentation.
-- `/menu` – category overview.
-- `/ping` – latency & uptime.
-- `/about` – bot metadata.
-- `/profile [@user|reply|number]` – usage stats, last/first seen, block status.
-
-### Media
-- `/sticker` – convert replied media into stickers.
-- `/download` – save media and return the file.
-- `/qrcode <text>` – generate QR images.
-- `/shorturl <url>` – shorten links (TinyURL API).
-
-### Utility
-- `/translate <lang> <text>` – translation (Google).
-- `/weather <city>` – weather snapshot (wttr.in).
-- `/remind <time> <message>` – reminders (1 minute – 7 days).
-- `/poll question | opt1 | opt2` – polls with voting & results.
-- `/calc <expression>` – Math evaluation with parentheses/functions.
-- `/timer start|stop|check [duration]` – timers & stopwatch.
-- `/define <word>` – dictionary lookups.
-- `/currency <amount> <from> <to>` – exchange rates.
-- `/compliment`, `/insult`, `/flirt` – fun interactions with cooldowns.
-
-### Group (Admin/Owner)
-- `/tagall`, `/add`, `/remove`, `/promote`, `/demote`, `/groupinfo`.
-- `/antilink`, `/antispam`, `/welcome`, `/goodbye` toggles.
-
-### Owner
-- `/broadcast`, `/block`, `/unblock`, `/leave`.
-
-Commands are auto-loaded from `commands/`; use `_template.js` or any existing file as a reference and restart the bot to activate new modules.
+3.  **Ready!**
+    *   The bot will log `✅ WhatsApp Bot is ready!`.
 
 ---
 
-## 🚀 Deployment
+## 🎛️ Admin Panel Setup
 
-The bot can be deployed to any server that supports Node.js. Here are a few options:
+The bot comes with a beautiful web dashboard located in `admin-panel/`.
 
-- **Local Machine/VPS**: The most straightforward way to deploy the bot. Use a process manager like PM2 to keep the bot running in the background.
-- **Oracle Cloud Always Free**: A great option for a free, 24/7 server.
-- **Railway.app**: A platform with a free tier and easy deployment from a GitHub repository.
-- **Render.com**: A platform with a free tier that sleeps after 15 minutes of inactivity.
-- **Fly.io**: A lightweight VM with limited free credits.
+### Option 1: Development Mode (Recommended for testing)
+Open a new terminal and run:
+```bash
+cd admin-panel
+npm install
+npm run dev
+```
+Visit `http://localhost:5173` (or the port shown).
 
-> **Note**: Serverless platforms like Vercel and Netlify are not suitable for this bot, as it requires a persistent process.
-
----
-
-## 🔐 Security
-
-- Keep your `.env` file, `database/bot.json`, and `.wwebjs_auth/` directory private and out of version control.
-- Limit the `OWNER_NUMBERS` to trusted admins.
-- Enable the anti-spam and anti-link filters for public groups.
-- Regularly monitor the `logs/` directory for any suspicious activity.
-- Keep the bot's dependencies up to date by running `npm audit fix`.
-
----
-
-## 🩺 Troubleshooting
-
-| Symptom | Likely Cause | Resolution |
-|---------|--------------|------------|
-| QR code not visible | Terminal/SSH client incompatibility | Switch to a different terminal, use the `qr-image` output, or check your internet connection. |
-| Authentication fails | Stale session | Delete the `.wwebjs_auth/` and `.wwebjs_cache/` directories, restart the bot, and re-scan the QR code. |
-| Bot unresponsive | Process crash, wrong prefix, or rate limit | Inspect the console or PM2 logs, verify the `PREFIX` in your `.env` file, and check the command cooldowns. |
-| Admin command denied | Multi-device ID not recognized | Ensure the user is an admin or owner. The `helpers.isGroupAdmin` function handles `@lid` IDs. |
-| Media download error | File too large or missing dependencies | Respect the `config.maxMediaSize` setting and install `sharp` and `ffmpeg`. |
+### Option 2: Production Build (Integrated)
+To serve the admin panel directly from the bot server:
+1.  **Build the panel:**
+    ```bash
+    npm run admin:build
+    ```
+2.  **Start the bot:**
+    ```bash
+    npm start
+    ```
+3.  Access the panel at `http://localhost:4000/admin` (default port).
 
 ---
 
-## 🤝 Contributing
+## 📚 Command List
 
-Contributions are welcome! Please follow these steps:
+### 👮 Moderation
+| Command | Alias | Description | Usage |
+| :--- | :--- | :--- | :--- |
+| `/kick` | `remove` | Remove user from group | `/kick @user [reason]` |
+| `/block` | `ban` | Block user from bot | `/block @user` |
+| `/unblock` | `unban` | Unblock user | `/unblock @user` |
+| `/mute` | `tempmute` | Mute user temporarily | `/mute @user 30m [reason]` |
+| `/unmute` | - | Unmute user | `/unmute @user` |
+| `/muteinfo` | - | Check mute status | `/muteinfo @user` |
+| `/warn` | - | Warn a user | `/warn @user [reason]` |
+| `/unwarn` | - | Remove warnings | `/unwarn @user` |
+| `/warnings` | `warns` | Check user warnings | `/warnings @user` |
+| `/clear` | - | Clear specific case | `/clear CASE-001` |
 
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feat/<idea>`).
-3. Follow the existing code structure and style.
-4. Add tests and documentation where relevant.
-5. Submit a pull request with a clear description of your changes.
+### 👥 Group Admin
+| Command | Alias | Description | Usage |
+| :--- | :--- | :--- | :--- |
+| `/tagall` | `everyone` | Mention all members | `/tagall [message]` |
+| `/promote` | `admin` | Make user admin | `/promote @user` |
+| `/demote` | `unadmin` | Dismiss admin | `/demote @user` |
+| `/welcome` | - | Manage welcome msg | `/welcome [on/off/set]` |
+| `/goodbye` | - | Manage goodbye msg | `/goodbye [on/off/set]` |
+| `/link` | `invite` | Get group link/QR | `/link` |
+| `/groupinfo` | `stats` | Group statistics | `/groupinfo` |
+
+### 🛠️ Tools & Utility
+| Command | Alias | Description | Usage |
+| :--- | :--- | :--- | :--- |
+| `/sticker` | `s` | Create sticker from image/video | Reply with `/s` |
+| `/translate` | `tr` | Translate text | `/tr es Hello` |
+| `/define` | `dict` | Get word definition | `/define serendipity` |
+| `/remind` | - | Set a reminder | `/remind 10m check food` |
+| `/calc` | - | Calculate math expression | `/calc 5 * 10` |
+| `/weather` | - | Get weather info | `/weather London` |
+| `/shorturl` | - | Shorten long links | `/shorturl <link>` |
+| `/download` | - | Download view-once/status | `/download` (Reply to media) |
+
+### ⚙️ General
+| Command | Alias | Description | Usage |
+| :--- | :--- | :--- | :--- |
+| `/help` | `menu` | Show all commands | `/help` |
+| `/ping` | - | Check bot latency | `/ping` |
+| `/about` | - | Bot information | `/about` |
+| `/profile` | - | Your user profile | `/profile` |
 
 ---
 
-## 📄 License
+## ⚙️ Deployment (PM2)
 
-This project is released under the MIT License. See the `LICENSE` file for details.
+For 24/7 hosting, use **PM2**:
+
+1.  Install PM2:
+    ```bash
+    npm install pm2 -g
+    ```
+2.  Start with ecosystem file:
+    ```bash
+    pm2 start ecosystem.config.js
+    ```
+3.  Monitor:
+    ```bash
+    pm2 monit
+    ```
+
+---
+
+## ❓ Troubleshooting
+
+*   **Puppeteer Issues?**
+    If the browser doesn't start, try installing Chrome manually or checking `.wwebjs_auth` folder permissions.
+*   **FFmpeg Missing?**
+    For stickers/audio to work, ensure FFmpeg is installed on your system and added to PATH.
+
+---
+
+made with ❤️

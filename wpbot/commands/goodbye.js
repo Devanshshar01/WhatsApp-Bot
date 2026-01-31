@@ -13,12 +13,6 @@ module.exports = {
     async execute(client, message, args) {
         try {
             const chat = await message.getChat();
-            
-            if (!chat.isGroup) {
-                await message.reply('❌ This command can only be used in groups.');
-                return;
-            }
-
             const groupId = message.from;
             let group = database.getGroup(groupId);
 
@@ -73,6 +67,11 @@ module.exports = {
                 
                 if (!customMessage) {
                     await message.reply('❌ Please provide a goodbye message.');
+                    return;
+                }
+
+                if (customMessage.length > 1000) {
+                    await message.reply('❌ Goodbye message too long. Maximum 1000 characters.');
                     return;
                 }
 

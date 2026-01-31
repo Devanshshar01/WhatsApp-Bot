@@ -13,7 +13,8 @@ const runtimeState = {
     isReady: false,
     qrCode: null,
     readyAt: null,
-    startTime: Date.now()
+    startTime: Date.now(),
+    muteSchedulerInterval: null
 };
 
 // Initialize directories
@@ -126,6 +127,54 @@ async function syncContactsAndGroups() {
     }
 }
 
+// Mute expiration scheduler - proactively unmutes users when their time is up
+function startMuteExpirationScheduler(whatsappClient) {
+    // Clear any existing interval
+    if (runtimeState.muteSchedulerInterval) {
+        clearInterval(runtimeState.muteSchedulerInterval);
+    }
+    
+    const checkAndExpireMutes = async () => {
+        try {
+            const allMutes = database.data.mutes.filter(m => m.active && m.expires_at);
+            const now = Date.now();
+            
+            for (const mute of allMutes) {
+                if (mute.expires_at <= now) {
+                    // Mute has expired - remove it and notify
+                    database.removeMute(mute.user_id, mute.group_id, 'system', 'Mute duration expired');
+                    
+                    // Notify in group
+                    try {
+                        const contact = await whatsappClient.getContactById(mute.user_id);
+                        const mentionText = contact?.number ? `@${contact.number}` : 'User';
+                        
+                        await whatsappClient.sendMessage(
+                            mute.group_id,
+                            `✅ ${mentionText}'s mute has expired. They can now send messages again.`,
+                            { mentions: contact ? [contact] : [] }
+                        );
+                        
+                        logger.info(`[MUTE SCHEDULER] Auto-unmuted ${mute.user_id} in ${mute.group_id}`);
+                    } catch (notifyError) {
+                        logger.error('Error sending mute expiry notification:', notifyError.message);
+                    }
+                }
+            }
+        } catch (error) {
+            logger.error('Error in mute expiration scheduler:', error);
+        }
+    };
+    
+    // Check every 30 seconds
+    runtimeState.muteSchedulerInterval = setInterval(checkAndExpireMutes, 30000);
+    
+    // Also run immediately on startup
+    checkAndExpireMutes();
+    
+    logger.info('Mute expiration scheduler started');
+}
+
 // QR Code Generation
 client.on('qr', (qr) => {
     logger.info('QR Code received. Scan with WhatsApp:');
@@ -156,25 +205,41 @@ client.on('ready', async () => {
     runtimeState.qrCode = null;
 
     await syncContactsAndGroups();
+    
+    // Reload persisted reminders
+    try {
+        const remindCommand = require('./commands/remind');
+        const reloadedCount = remindCommand.reloadReminders(client);
+        if (reloadedCount > 0) {
+            logger.info(`Reloaded ${reloadedCount} persisted reminders`);
+        }
+    } catch (error) {
+        logger.error('Error reloading reminders:', error);
+    }
+    
+    // Start mute expiration scheduler (checks every 30 seconds)
+    startMuteExpirationScheduler(client);
 });
 
 // Message Handler
 client.on('message', async (message) => {
     try {
-        console.log('[MAIN] New message event triggered');
-        console.log('[MAIN] Message details:', {
-            from: message.from,
-            body: message.body,
-            hasMedia: message.hasMedia,
-            type: message.type
-        });
+        if (config.debugMode) {
+            console.log('[MAIN] New message event triggered');
+            console.log('[MAIN] Message details:', {
+                from: message.from,
+                body: message.body,
+                hasMedia: message.hasMedia,
+                type: message.type
+            });
+        }
         
         // Store client reference in message for easier access
         message.client = message.client || client;
         await messageHandler.handle(client, message);
     } catch (error) {
         logger.error('Error handling message:', error);
-        console.error('[MAIN ERROR]', error);
+        if (config.debugMode) console.error('[MAIN ERROR]', error);
     }
 });
 
