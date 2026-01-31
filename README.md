@@ -1,5 +1,15 @@
 # 🤖 Advanced WhatsApp Bot
 
+<div align="center">
+
+![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)
+![Express.js](https://img.shields.io/badge/Express.js-404D59?style=for-the-badge)
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)
+![WhatsApp](https://img.shields.io/badge/WhatsApp_Web.js-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)
+
+</div>
+
 A powerful, feature-rich WhatsApp automation bot built with **Node.js** and **whatsapp-web.js**. This bot is designed for groups and personal use, offering comprehensive moderation, utility tools, media handling, and a full-stack **Admin Dashboard**.
 
 ---
