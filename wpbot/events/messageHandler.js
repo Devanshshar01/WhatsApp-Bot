@@ -5,6 +5,10 @@ const cooldown = require('../utils/cooldown');
 const database = require('../database/database');
 const commandHandler = require('../utils/commandHandler');
 
+// AFK notification cooldown (don't spam if someone keeps mentioning AFK user)
+const afkNotificationCooldown = new Map(); // `${mentionedUser}_${chatId}` -> timestamp
+const AFK_NOTIFY_COOLDOWN = 60000; // 1 minute
+
 // Track muted user message queue for batch deletion
 const mutedMessageQueue = new Map(); // groupId -> Map(userId -> { messages: [], timer: null })
 const BATCH_DELETE_DELAY = 500; // ms to wait before batch deleting
@@ -78,6 +82,16 @@ class MessageHandler {
                 }
             }
 
+            // AFK system: Remove AFK if user sends a message (non-command)
+            if (!body.startsWith(config.prefix)) {
+                const userAfk = database.getAfk(userId);
+                if (userAfk) {
+                    database.removeAfk(userId);
+                    const afkDuration = helpers.formatDuration(Date.now() - userAfk.since);
+                    await message.reply(`👋 Welcome back, ${userName}! You were AFK for ${afkDuration}.`);
+                }
+            }
+
             // Handle group-specific filters (but don't return if it's a command)
             if (message.from.endsWith('@g.us') && !body.startsWith(config.prefix)) {
                 await this.handleGroupFilters(client, message, body);
@@ -90,6 +104,13 @@ class MessageHandler {
                 await this.handleCommand(client, message, body);
                 return;
             }
+
+            // Auto-reply rules (custom triggers)
+            const autoReplyHandled = await this.handleCustomAutoReply(message, body);
+            if (autoReplyHandled) return;
+
+            // AFK mentions: Check if any mentioned user is AFK
+            await this.handleAfkMentions(message);
 
             // Auto-response for greetings
             const autoResponseEnabled = database.getFeatureFlag('autoResponse', config.features.autoResponse);
@@ -104,13 +125,106 @@ class MessageHandler {
     }
 
     /**
+     * Handle custom auto-reply rules
+     */
+    async handleCustomAutoReply(message, body) {
+        const chatId = message.from;
+        const lowerBody = body.toLowerCase();
+        
+        // Get all applicable auto-replies (global + group-specific)
+        const autoReplies = database.getAutoReplies(chatId);
+        
+        for (const rule of autoReplies) {
+            if (!rule.enabled) continue;
+            
+            let matches = false;
+            const trigger = rule.trigger.toLowerCase();
+            
+            switch (rule.matchType) {
+                case 'exact':
+                    matches = lowerBody === trigger;
+                    break;
+                case 'contains':
+                    matches = lowerBody.includes(trigger);
+                    break;
+                case 'regex':
+                    try {
+                        const regex = new RegExp(rule.trigger, 'i');
+                        matches = regex.test(body);
+                    } catch (e) {
+                        // Invalid regex, skip
+                    }
+                    break;
+            }
+            
+            if (matches) {
+                await message.reply(rule.response);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Handle AFK mentions - notify when someone mentions an AFK user
+     */
+    async handleAfkMentions(message) {
+        try {
+            const mentionedContacts = await message.getMentions();
+            if (!mentionedContacts || mentionedContacts.length === 0) return;
+            
+            const chatId = message.from;
+            
+            for (const contact of mentionedContacts) {
+                const mentionedUserId = contact.id._serialized;
+                const afkData = database.getAfk(mentionedUserId);
+                
+                if (afkData) {
+                    // Check cooldown to avoid spam
+                    const cooldownKey = `${mentionedUserId}_${chatId}`;
+                    const lastNotified = afkNotificationCooldown.get(cooldownKey);
+                    
+                    if (lastNotified && (Date.now() - lastNotified) < AFK_NOTIFY_COOLDOWN) {
+                        continue; // Skip, recently notified
+                    }
+                    
+                    afkNotificationCooldown.set(cooldownKey, Date.now());
+                    
+                    const userName = contact.pushname || contact.name || 'This user';
+                    const afkDuration = helpers.formatDuration(Date.now() - afkData.since);
+                    const reason = afkData.reason || 'No reason specified';
+                    
+                    await message.reply(`💤 *${userName}* is currently AFK\n⏱️ Duration: ${afkDuration}\n📝 Reason: ${reason}`);
+                }
+            }
+        } catch (error) {
+            logger.error('Error handling AFK mentions:', error);
+        }
+    }
+
+    /**
      * Handle command execution
      */
     async handleCommand(client, message, body) {
-        const args = body.slice(config.prefix.length).trim().split(/\s+/);
-        const commandName = args.shift().toLowerCase();
+        let args = body.slice(config.prefix.length).trim().split(/\s+/);
+        let commandName = args.shift().toLowerCase();
 
         if (!commandName) return;
+
+        // Check for command alias
+        const userId = helpers.getMessageActorId(message);
+        if (userId) {
+            const alias = database.getAlias(userId, commandName);
+            if (alias) {
+                // Parse the aliased command
+                const aliasedParts = alias.command.split(/\s+/);
+                commandName = aliasedParts.shift().toLowerCase();
+                // Prepend aliased args, then append original args
+                args = [...aliasedParts, ...args];
+                logger.info(`Alias resolved: ${alias.shortcut} -> ${alias.command}`);
+            }
+        }
 
         logger.info(`Executing command: ${commandName} with args: ${args.join(' ')}`);
 

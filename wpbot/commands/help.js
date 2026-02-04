@@ -46,6 +46,7 @@ module.exports = {
                 utility: { label: '🧰 Utility Commands', items: [], seen: new Set() },
                 media: { label: '🎨 Media Commands', items: [], seen: new Set() },
                 fun: { label: '🎉 Fun Commands', items: [], seen: new Set() },
+                automation: { label: '🤖 Automation Commands', items: [], seen: new Set() },
                 group: { label: '👥 Group Commands', items: [], seen: new Set() },
                 admin: { label: '🛡️ Admin Commands', items: [], seen: new Set() },
                 owner: { label: '👑 Owner Commands', items: [], seen: new Set() }
@@ -88,6 +89,9 @@ module.exports = {
                 } else if (normalizedCategory === 'fun') {
                     addToCategory('fun', cmd, entry);
                     assigned = true;
+                } else if (normalizedCategory === 'automation') {
+                    addToCategory('automation', cmd, entry);
+                    assigned = true;
                 }
 
                 if (!assigned) {
@@ -103,7 +107,7 @@ module.exports = {
             helpText += `Prefix: *${config.prefix}*\n`;
             helpText += `Total Commands: *${commands.length}*\n\n`;
 
-            const displayOrder = ['basic', 'utility', 'media', 'fun', 'group', 'admin', 'owner'];
+            const displayOrder = ['basic', 'utility', 'media', 'fun', 'automation', 'group', 'admin', 'owner'];
 
             displayOrder.forEach(key => {
                 const category = categories[key];

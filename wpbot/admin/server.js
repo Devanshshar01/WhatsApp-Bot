@@ -946,6 +946,109 @@ function startAdminServer({
     }
   });
 
+  // ========== AUTOMATION ROUTES ==========
+
+  // Scheduled Messages
+  router.get('/automation/schedules', requireAuth, (req, res) => {
+    const { chatId } = req.query;
+    const schedules = chatId 
+      ? database.getScheduledMessages(chatId)
+      : database.data.scheduledMessages || [];
+    res.json({ success: true, schedules });
+  });
+
+  router.post('/automation/schedules', requireAuth, (req, res) => {
+    const { chatId, message, cronExpression } = req.body;
+    if (!chatId || !message || !cronExpression) {
+      return res.status(400).json({ error: 'chatId, message, and cronExpression are required' });
+    }
+    try {
+      const schedule = database.addScheduledMessage(chatId, message, cronExpression, 'admin:panel');
+      // Start the job if scheduler is available
+      try {
+        const scheduler = require('../utils/scheduler');
+        const client = getClient();
+        if (client) scheduler.startJob(schedule, client);
+      } catch (e) { /* scheduler not loaded */ }
+      res.json({ success: true, schedule });
+    } catch (error) {
+      logger.error('[ADMIN] Failed to create schedule:', error);
+      res.status(500).json({ error: 'Failed to create schedule' });
+    }
+  });
+
+  router.delete('/automation/schedules/:id', requireAuth, (req, res) => {
+    const id = parseInt(req.params.id);
+    try {
+      const scheduler = require('../utils/scheduler');
+      scheduler.stopJob(id);
+    } catch (e) { /* scheduler not loaded */ }
+    const deleted = database.deleteScheduledMessage(id);
+    if (deleted) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Schedule not found' });
+    }
+  });
+
+  // Auto-Reply Rules
+  router.get('/automation/autoreplies', requireAuth, (req, res) => {
+    const { chatId } = req.query;
+    const rules = chatId
+      ? database.getAutoReplies(chatId)
+      : database.getAllAutoReplies();
+    res.json({ success: true, rules });
+  });
+
+  router.post('/automation/autoreplies', requireAuth, (req, res) => {
+    const { chatId, trigger, response, matchType } = req.body;
+    if (!trigger || !response) {
+      return res.status(400).json({ error: 'trigger and response are required' });
+    }
+    try {
+      const rule = database.addAutoReply(trigger, response, {
+        matchType: matchType || 'contains',
+        chatId: chatId || null,
+        createdBy: 'admin:panel'
+      });
+      res.json({ success: true, rule });
+    } catch (error) {
+      logger.error('[ADMIN] Failed to create auto-reply:', error);
+      res.status(500).json({ error: 'Failed to create auto-reply' });
+    }
+  });
+
+  router.patch('/automation/autoreplies/:id', requireAuth, (req, res) => {
+    const id = parseInt(req.params.id);
+    const toggled = database.toggleAutoReply(id);
+    if (toggled) {
+      res.json({ success: true, rule: toggled });
+    } else {
+      res.status(404).json({ error: 'Auto-reply rule not found' });
+    }
+  });
+
+  router.delete('/automation/autoreplies/:id', requireAuth, (req, res) => {
+    const id = parseInt(req.params.id);
+    const deleted = database.deleteAutoReply(id);
+    if (deleted) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Auto-reply rule not found' });
+    }
+  });
+
+  // AFK Users (read-only from admin)
+  router.get('/automation/afk', requireAuth, (req, res) => {
+    const afkUsers = database.data.afkUsers || {};
+    const list = Object.entries(afkUsers).map(([userId, data]) => ({
+      userId,
+      ...data,
+      duration: Date.now() - data.since
+    }));
+    res.json({ success: true, afkUsers: list });
+  });
+
   app.use('/admin/api', router);
 
   // Serve built static assets when available

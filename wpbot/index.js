@@ -8,6 +8,8 @@ const messageHandler = require('./events/messageHandler');
 const groupHandler = require('./events/groupHandler');
 const commandHandler = require('./utils/commandHandler');
 const startAdminServer = require('./admin/server');
+const scheduler = require('./utils/scheduler');
+const gemini = require('./utils/gemini');
 
 const runtimeState = {
     isReady: false,
@@ -219,6 +221,24 @@ client.on('ready', async () => {
     
     // Start mute expiration scheduler (checks every 30 seconds)
     startMuteExpirationScheduler(client);
+    
+    // Initialize scheduled messages
+    try {
+        scheduler.initializeScheduler(database, client);
+        logger.info('Scheduled message system initialized');
+    } catch (error) {
+        logger.error('Error initializing scheduler:', error);
+    }
+    
+    // Initialize Gemini AI
+    try {
+        const geminiReady = gemini.initialize();
+        if (geminiReady) {
+            logger.info('Gemini AI chat initialized');
+        }
+    } catch (error) {
+        logger.error('Error initializing Gemini:', error);
+    }
 });
 
 // Message Handler

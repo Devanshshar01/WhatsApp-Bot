@@ -16,6 +16,11 @@ class BotDatabase {
             moderationLogs: [],
             commandStats: [],
             reminders: [],
+            scheduledMessages: [],
+            autoReplies: [],
+            commandAliases: [],
+            afkUsers: {},
+            aiChatHistory: {},
             settings: {
                 features: {},
                 commandToggles: {}
@@ -25,7 +30,10 @@ class BotDatabase {
             },
             counters: {
                 nextCase: 1,
-                nextReminder: 1
+                nextReminder: 1,
+                nextSchedule: 1,
+                nextAutoReply: 1,
+                nextAlias: 1
             }
         };
         this.events = new EventEmitter();
@@ -1075,6 +1083,233 @@ class BotDatabase {
         if (this.data.reminders.length !== before) {
             this.save();
         }
+    }
+
+    /**
+     * Scheduled Messages
+     */
+    addScheduledMessage(chatId, message, cronExpression, createdBy) {
+        this.data.counters = this.data.counters || { nextSchedule: 1 };
+        if (!this.data.counters.nextSchedule) this.data.counters.nextSchedule = 1;
+        
+        const schedule = {
+            id: this.data.counters.nextSchedule++,
+            chatId,
+            message,
+            cronExpression,
+            createdBy,
+            enabled: true,
+            createdAt: Date.now(),
+            lastRun: null
+        };
+        
+        this.data.scheduledMessages = this.data.scheduledMessages || [];
+        this.data.scheduledMessages.push(schedule);
+        this.save();
+        return schedule;
+    }
+
+    getScheduledMessages(chatId = null) {
+        this.data.scheduledMessages = this.data.scheduledMessages || [];
+        if (chatId) {
+            return this.data.scheduledMessages.filter(s => s.chatId === chatId);
+        }
+        return this.data.scheduledMessages;
+    }
+
+    getScheduledMessageById(id) {
+        this.data.scheduledMessages = this.data.scheduledMessages || [];
+        return this.data.scheduledMessages.find(s => s.id === id) || null;
+    }
+
+    updateScheduledMessage(id, updates) {
+        const schedule = this.getScheduledMessageById(id);
+        if (schedule) {
+            Object.assign(schedule, updates);
+            this.save();
+            return schedule;
+        }
+        return null;
+    }
+
+    deleteScheduledMessage(id) {
+        this.data.scheduledMessages = this.data.scheduledMessages || [];
+        const index = this.data.scheduledMessages.findIndex(s => s.id === id);
+        if (index !== -1) {
+            this.data.scheduledMessages.splice(index, 1);
+            this.save();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Auto-Reply Rules
+     */
+    addAutoReply(trigger, response, options = {}) {
+        this.data.counters = this.data.counters || { nextAutoReply: 1 };
+        if (!this.data.counters.nextAutoReply) this.data.counters.nextAutoReply = 1;
+        
+        const rule = {
+            id: this.data.counters.nextAutoReply++,
+            trigger: trigger.toLowerCase(),
+            response,
+            matchType: options.matchType || 'contains', // 'exact', 'contains', 'regex'
+            chatId: options.chatId || null, // null = global
+            enabled: true,
+            createdBy: options.createdBy || 'system',
+            createdAt: Date.now()
+        };
+        
+        this.data.autoReplies = this.data.autoReplies || [];
+        this.data.autoReplies.push(rule);
+        this.save();
+        return rule;
+    }
+
+    getAutoReplies(chatId = null) {
+        this.data.autoReplies = this.data.autoReplies || [];
+        return this.data.autoReplies.filter(r => r.enabled && (r.chatId === null || r.chatId === chatId));
+    }
+
+    getAllAutoReplies() {
+        this.data.autoReplies = this.data.autoReplies || [];
+        return this.data.autoReplies;
+    }
+
+    deleteAutoReply(id) {
+        this.data.autoReplies = this.data.autoReplies || [];
+        const index = this.data.autoReplies.findIndex(r => r.id === id);
+        if (index !== -1) {
+            this.data.autoReplies.splice(index, 1);
+            this.save();
+            return true;
+        }
+        return false;
+    }
+
+    toggleAutoReply(id) {
+        const rule = this.data.autoReplies?.find(r => r.id === id);
+        if (rule) {
+            rule.enabled = !rule.enabled;
+            this.save();
+            return rule;
+        }
+        return null;
+    }
+
+    /**
+     * Command Aliases
+     */
+    addAlias(alias, command, createdBy) {
+        this.data.counters = this.data.counters || { nextAlias: 1 };
+        if (!this.data.counters.nextAlias) this.data.counters.nextAlias = 1;
+        
+        // Check if alias already exists
+        this.data.commandAliases = this.data.commandAliases || [];
+        const existing = this.data.commandAliases.find(a => a.alias.toLowerCase() === alias.toLowerCase());
+        if (existing) {
+            return null; // Alias already exists
+        }
+        
+        const aliasRecord = {
+            id: this.data.counters.nextAlias++,
+            alias: alias.toLowerCase(),
+            command,
+            createdBy,
+            createdAt: Date.now()
+        };
+        
+        this.data.commandAliases.push(aliasRecord);
+        this.save();
+        return aliasRecord;
+    }
+
+    getAlias(alias) {
+        this.data.commandAliases = this.data.commandAliases || [];
+        return this.data.commandAliases.find(a => a.alias.toLowerCase() === alias.toLowerCase()) || null;
+    }
+
+    getAllAliases() {
+        this.data.commandAliases = this.data.commandAliases || [];
+        return this.data.commandAliases;
+    }
+
+    deleteAlias(alias) {
+        this.data.commandAliases = this.data.commandAliases || [];
+        const index = this.data.commandAliases.findIndex(a => a.alias.toLowerCase() === alias.toLowerCase());
+        if (index !== -1) {
+            this.data.commandAliases.splice(index, 1);
+            this.save();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * AFK System
+     */
+    setAfk(userId, reason = '') {
+        this.data.afkUsers = this.data.afkUsers || {};
+        this.data.afkUsers[userId] = {
+            reason: reason || 'AFK',
+            since: Date.now()
+        };
+        this.save();
+        return this.data.afkUsers[userId];
+    }
+
+    getAfk(userId) {
+        this.data.afkUsers = this.data.afkUsers || {};
+        return this.data.afkUsers[userId] || null;
+    }
+
+    removeAfk(userId) {
+        this.data.afkUsers = this.data.afkUsers || {};
+        if (this.data.afkUsers[userId]) {
+            const afkData = this.data.afkUsers[userId];
+            delete this.data.afkUsers[userId];
+            this.save();
+            return afkData;
+        }
+        return null;
+    }
+
+    getAllAfkUsers() {
+        this.data.afkUsers = this.data.afkUsers || {};
+        return this.data.afkUsers;
+    }
+
+    /**
+     * AI Chat History
+     */
+    getAiChatHistory(chatId, limit = 10) {
+        this.data.aiChatHistory = this.data.aiChatHistory || {};
+        const history = this.data.aiChatHistory[chatId] || [];
+        return history.slice(-limit);
+    }
+
+    addAiChatMessage(chatId, role, content) {
+        this.data.aiChatHistory = this.data.aiChatHistory || {};
+        if (!this.data.aiChatHistory[chatId]) {
+            this.data.aiChatHistory[chatId] = [];
+        }
+        this.data.aiChatHistory[chatId].push({ role, content, timestamp: Date.now() });
+        // Keep only last 20 messages per chat
+        if (this.data.aiChatHistory[chatId].length > 20) {
+            this.data.aiChatHistory[chatId] = this.data.aiChatHistory[chatId].slice(-20);
+        }
+        this.save();
+    }
+
+    clearAiChatHistory(chatId) {
+        this.data.aiChatHistory = this.data.aiChatHistory || {};
+        if (this.data.aiChatHistory[chatId]) {
+            delete this.data.aiChatHistory[chatId];
+            this.save();
+            return true;
+        }
+        return false;
     }
 
     /**

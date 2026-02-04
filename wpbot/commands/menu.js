@@ -37,9 +37,16 @@ module.exports = {
             menuText += `└ ${config.prefix}download - Save media\n\n`;
 
             menuText += `*🎉 FUN COMMANDS*\n`;
+            menuText += `├ ${config.prefix}ai <message> - Chat with AI\n`;
             menuText += `├ ${config.prefix}compliment - Spread positivity\n`;
             menuText += `├ ${config.prefix}insult - Light roast\n`;
             menuText += `└ ${config.prefix}flirt - Pickup lines\n\n`;
+
+            menuText += `*🤖 AUTOMATION COMMANDS*\n`;
+            menuText += `├ ${config.prefix}afk [reason] - Set AFK status\n`;
+            menuText += `├ ${config.prefix}alias - Create shortcuts\n`;
+            menuText += `├ ${config.prefix}autoreply - Custom replies\n`;
+            menuText += `└ ${config.prefix}schedule - Timed messages\n\n`;
 
             menuText += `*👥 GROUP COMMANDS*\n`;
             menuText += `├ ${config.prefix}tagall - Tag everyone\n`;

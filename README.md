@@ -31,11 +31,19 @@ A powerful, feature-rich WhatsApp automation bot built with **Node.js** and **wh
 *   **Group Info**: Get detailed statistics about the group.
 
 ### 🛠️ Utilities
-*   **AI Tools**: Translate text, Define words.
+*   **AI Chat**: Chat with Google Gemini AI (`/ai tell me a joke`).
+*   **Translate**: Multi-language translation.
+*   **Define**: Dictionary definitions.
 *   **Math**: Advanced calculator (powered by `expr-eval`).
 *   **Reminders**: Set persistent reminders (`/remind 10m check oven`).
 *   **Weather**: Real-time weather updates.
 *   **Conversion**: Currency, Polls, and more.
+
+### 🤖 Automation (NEW!)
+*   **AFK System**: Set away status, auto-notify when mentioned (`/afk`).
+*   **Command Aliases**: Create personal shortcuts (`/alias add gm broadcast Good morning!`).
+*   **Auto-Reply Rules**: Custom triggers with exact/contains/regex matching (`/autoreply`).
+*   **Scheduled Messages**: Automated timed messages with cron support (`/schedule`).
 
 ### 🎬 Media
 *   **Stickers**: Convert Images/Videos to stickers instantly (`/sticker`).
@@ -78,6 +86,9 @@ A powerful, feature-rich WhatsApp automation bot built with **Node.js** and **wh
         OWNER_NUMBERS=1234567890
         DEFAULT_COUNTRY_CODE=1
         DEBUG_MODE=false
+        
+        # Optional: Get free API key from https://ai.google.dev/
+        GEMINI_API_KEY=your_api_key_here
         ```
 
 ---
@@ -157,6 +168,7 @@ To serve the admin panel directly from the bot server:
 ### 🛠️ Tools & Utility
 | Command | Alias | Description | Usage |
 | :--- | :--- | :--- | :--- |
+| `/ai` | `ask`, `chat` | Chat with AI | `/ai What is 2+2?` |
 | `/sticker` | `s` | Create sticker from image/video | Reply with `/s` |
 | `/translate` | `tr` | Translate text | `/tr es Hello` |
 | `/define` | `dict` | Get word definition | `/define serendipity` |
@@ -165,6 +177,14 @@ To serve the admin panel directly from the bot server:
 | `/weather` | - | Get weather info | `/weather London` |
 | `/shorturl` | - | Shorten long links | `/shorturl <link>` |
 | `/download` | - | Download view-once/status | `/download` (Reply to media) |
+
+### 🤖 Automation
+| Command | Alias | Description | Usage |
+| :--- | :--- | :--- | :--- |
+| `/afk` | `away` | Set AFK status | `/afk lunch break` |
+| `/alias` | - | Create command shortcuts | `/alias add gm broadcast Good morning` |
+| `/autoreply` | `ar` | Custom auto-reply rules | `/autoreply add "hi" -> "Hello!"` |
+| `/schedule` | `cron` | Schedule timed messages | `/schedule 9:00 daily Good morning!` |
 
 ### ⚙️ General
 | Command | Alias | Description | Usage |

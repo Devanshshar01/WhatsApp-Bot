@@ -9,6 +9,9 @@ module.exports = {
     // Database
     databasePath: process.env.DATABASE_PATH || './database/bot.db',
     
+    // Gemini AI (free tier: https://ai.google.dev/)
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+    
     // Features
     features: {
         autoResponse: process.env.ENABLE_AUTO_RESPONSE === 'true',
@@ -17,11 +20,11 @@ module.exports = {
         profanityFilter: process.env.ENABLE_PROFANITY_FILTER === 'true'
     },
 
-    // Group Automations
-    groupAutomations: {
-        welcomeMessages: process.env.ENABLE_WELCOME_MESSAGES === 'true',
-        goodbyeMessages: process.env.ENABLE_GOODBYE_MESSAGES === 'true'
-    },
+    // Group Automations (disabled by default to prevent unwanted messages)
+    // groupAutomations: {
+    //     welcomeMessages: process.env.ENABLE_WELCOME_MESSAGES === 'true',
+    //     goodbyeMessages: process.env.ENABLE_GOODBYE_MESSAGES === 'true'
+    // },
     
     // Rate Limiting
     commandCooldown: parseInt(process.env.COMMAND_COOLDOWN) || 3000,
